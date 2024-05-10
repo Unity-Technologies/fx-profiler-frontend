@@ -1,0 +1,24 @@
+runtime: nodejs18
+service: profiler
+
+instance_class: F1
+
+handlers:
+  - url: /docs/?$
+    static_files: docs-user/index.html
+    upload: docs-user/index.html
+  - url: /docs/(..*)$
+    static_files: docs-user/\1
+    upload: docs-user/.*
+  - url: /(.*\.(ico|jpg|jpeg|png|gif|woff|ttf|otf|eot|svg|md|ftl|css|wasm|json))$
+    static_files: dist/\1
+    upload: dist/(.*\.(ico|jpg|jpeg|png|gif|woff|ttf|otf|eot|svg|md|ftl|css|wasm|json))$
+    secure: always
+  - url: /(.*\.(js|map))$
+    static_files: dist/\1
+    upload: dist/(.*\.(js|map))$
+    secure: always
+  - url: /.*
+    static_files: dist/index.html
+    upload: dist/index.html
+    secure: always
