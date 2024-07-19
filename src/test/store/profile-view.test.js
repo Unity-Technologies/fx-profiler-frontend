@@ -902,6 +902,52 @@ describe('actions/ProfileView', function () {
       expect(getMarker(markerIndexes[1]).name.includes('b')).toBeTruthy();
     });
 
+    it('filters the markers by searchable unique-string fields', function () {
+      const profile = getProfileWithMarkers([
+        [
+          'a',
+          5,
+          10,
+          {
+            type: 'StringTesting',
+            searchableString: 'searchable cucumber',
+            searchableUniqueString: 'searchable mango',
+            nonSearchableString: 'non-searchable papaya',
+            nonSearchableUniqueString: 'non-searchable onion',
+          },
+        ],
+      ]);
+      const { dispatch, getState } = storeWithProfile(profile);
+
+      expect(
+        selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState())
+      ).toHaveLength(1);
+
+      const getMarker = selectedThreadSelectors.getMarkerGetter(getState());
+      const markerPayload: MixedObject = (getMarker(0).data: any);
+      expect(typeof markerPayload.searchableString).toBe('string');
+      expect(typeof markerPayload.searchableUniqueString).toBe('number');
+      expect(typeof markerPayload.nonSearchableString).toBe('string');
+      expect(typeof markerPayload.nonSearchableUniqueString).toBe('number');
+
+      function getMarkerIndexesForSearch(searchString) {
+        dispatch(ProfileView.changeMarkersSearchString(searchString));
+        return selectedThreadSelectors.getSearchFilteredMarkerIndexes(
+          getState()
+        );
+      }
+
+      // cucumber and mango should match the marker, because those strings
+      // are contained in searchable fields.
+      expect(getMarkerIndexesForSearch('cucumber')).toHaveLength(1);
+      expect(getMarkerIndexesForSearch('mango')).toHaveLength(1);
+
+      // papaya and onion should not match the marker, because those strings
+      // are only contained in non-searchable fields.
+      expect(getMarkerIndexesForSearch('papaya')).toHaveLength(0);
+      expect(getMarkerIndexesForSearch('onion')).toHaveLength(0);
+    });
+
     it('filters the markers by a potential data payload of type FileIO', function () {
       const profile = getProfileWithMarkers([
         ['a', 0, null],
@@ -1265,6 +1311,70 @@ describe('actions/ProfileView', function () {
         selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState());
       expect(markerIndexes).toHaveLength(1);
       expect(getMarker(markerIndexes[0]).name.includes('a')).toBeTruthy();
+
+      // Testing the negative filtering
+
+      // Tests the basic negative filtering with "-timing".
+      dispatch(ProfileView.changeMarkersSearchString('-name:mark'));
+
+      markerIndexes =
+        selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState());
+      expect(markerIndexes).toHaveLength(3);
+      expect(getMarker(markerIndexes[0]).name.includes('a')).toBeTruthy();
+      expect(getMarker(markerIndexes[1]).name.includes('c')).toBeTruthy();
+      expect(getMarker(markerIndexes[2]).name.includes('d')).toBeTruthy();
+
+      // Tests multiple negative filtering with "-mark,-clic".
+      dispatch(ProfileView.changeMarkersSearchString('-name:mark,-name:clic'));
+
+      markerIndexes =
+        selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState());
+      expect(markerIndexes).toHaveLength(2);
+      expect(getMarker(markerIndexes[0]).name.includes('a')).toBeTruthy();
+      expect(getMarker(markerIndexes[1]).name.includes('c')).toBeTruthy();
+
+      // Tests the negative filtering on a field with "-timing".
+      dispatch(ProfileView.changeMarkersSearchString('-type:timing'));
+
+      markerIndexes =
+        selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState());
+      expect(markerIndexes).toHaveLength(2);
+      expect(getMarker(markerIndexes[0]).name.includes('a')).toBeTruthy();
+      expect(getMarker(markerIndexes[1]).name.includes('c')).toBeTruthy();
+
+      // Tests searching for the UserTiming type and negative search field.
+      dispatch(ProfileView.changeMarkersSearchString('type:timing,-name:b'));
+
+      markerIndexes =
+        selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState());
+      expect(markerIndexes).toHaveLength(1);
+      expect(getMarker(markerIndexes[0]).name.includes('d')).toBeTruthy();
+
+      // Tests searching for the mark-1 string making sure that it successfully gets it.
+      dispatch(ProfileView.changeMarkersSearchString('-1'));
+
+      markerIndexes =
+        selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState());
+      expect(markerIndexes).toHaveLength(1);
+      expect(getMarker(markerIndexes[0]).name.includes('b')).toBeTruthy();
+
+      // Tests searching for the mark-1 as a field string making sure that it successfully gets it.
+      dispatch(ProfileView.changeMarkersSearchString('name:-1'));
+
+      markerIndexes =
+        selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState());
+      expect(markerIndexes).toHaveLength(1);
+      expect(getMarker(markerIndexes[0]).name.includes('b')).toBeTruthy();
+
+      // Tests searching for the mark-1 as a negative filter to make sure we exclude it.
+      dispatch(ProfileView.changeMarkersSearchString('-name:-1'));
+
+      markerIndexes =
+        selectedThreadSelectors.getSearchFilteredMarkerIndexes(getState());
+      expect(markerIndexes).toHaveLength(3);
+      expect(getMarker(markerIndexes[0]).name.includes('a')).toBeTruthy();
+      expect(getMarker(markerIndexes[1]).name.includes('c')).toBeTruthy();
+      expect(getMarker(markerIndexes[2]).name.includes('d')).toBeTruthy();
     });
   });
 
