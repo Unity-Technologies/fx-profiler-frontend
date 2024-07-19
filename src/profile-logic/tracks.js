@@ -24,6 +24,7 @@ import { intersectSets, subtractSets } from '../utils/set';
 import { splitSearchString, stringsToRegExp } from '../utils/string';
 import { ensureExists, assertExhaustiveCheck } from '../utils/flow';
 import { getMarkerSchemaName } from './marker-schema';
+import { unityIsEssentialThread, unityIsInterestingThread } from './unity';
 
 export type TracksWithOrder = {|
   +globalTracks: GlobalTrack[],
@@ -93,6 +94,8 @@ const GLOBAL_TRACK_DISPLAY_ORDER = {
   screenshots: 3,
   process: 4,
 };
+
+const NUM_THREADS_BY_DEFAULT = 100;
 
 function _getDefaultLocalTrackOrder(tracks: LocalTrack[], profile: ?Profile) {
   const trackOrder = tracks.map((_, index) => index);
@@ -955,8 +958,8 @@ export function computeDefaultVisibleThreads(
     return b.boostedSampleScore - a.boostedSampleScore;
   });
 
-  // Take the top 15 threads and cull everything else.
-  const top15 = scores.slice(0, 15);
+  // Take the top N threads and cull everything else.
+  const topThreads = scores.slice(0, NUM_THREADS_BY_DEFAULT);
 
   // As a last pass, cull very-idle threads, by comparing their activity
   // to the thread with the most "sampleScore" activity.
@@ -966,7 +969,7 @@ export function computeDefaultVisibleThreads(
     ...scores.map(({ score }) => score.sampleScore)
   );
   const thresholdSampleScore = highestSampleScore * IDLE_THRESHOLD_FRACTION;
-  const finalList = top15.filter(({ score }) => {
+  const finalList = topThreads.filter(({ score }) => {
     if (score.isEssentialFirefoxThread) {
       return true; // keep.
     }
@@ -1008,9 +1011,11 @@ function _computeThreadDefaultVisibilityScore(
   thread: Thread,
   maxCpuDeltaPerInterval: number | null
 ): DefaultVisibilityScore {
-  const isEssentialFirefoxThread = _isEssentialFirefoxThread(thread);
-  const isInterestingEvenWithMinimalActivity =
-    _isFirefoxMediaThreadWhichIsUsuallyIdle(thread);
+  //const isEssentialFirefoxThread = _isEssentialFirefoxThread(thread);
+  //const isInterestingEvenWithMinimalActivity =
+  //  _isFirefoxMediaThreadWhichIsUsuallyIdle(thread);
+  const isEssentialFirefoxThread = unityIsEssentialThread(thread);
+  const isInterestingEvenWithMinimalActivity = unityIsInterestingThread(thread);
   const sampleScore = _computeThreadSampleScore(
     profile,
     thread,
