@@ -4,18 +4,25 @@
 
 // @flow
 
-import { PROFILER_SERVER_ORIGIN } from 'firefox-profiler/app-logic/constants';
+import { ENABLE_URL_SHORTENING, PROFILER_SERVER_ORIGIN, PROFILER_URL_REQUIRED_ROOT } from 'firefox-profiler/app-logic/constants';
 
 const ACCEPT_HEADER_VALUE = 'application/vnd.firefox-profiler+json;version=1.0';
 
 export async function shortenUrl(urlToShorten: string): Promise<string> {
+  if (!ENABLE_URL_SHORTENING) {
+      return urlToShorten;
+  }
+
   let longUrl = urlToShorten;
-  if (!longUrl.startsWith('https://profiler.firefox.com/')) {
-    const parsedUrl = new URL(longUrl);
-    parsedUrl.protocol = 'https';
-    parsedUrl.host = 'profiler.firefox.com';
-    parsedUrl.port = '';
-    longUrl = parsedUrl.toString();
+
+  if (false && PROFILER_URL_REQUIRED_ROOT != null) {
+    if (!longUrl.startsWith(`https://${PROFILER_URL_REQUIRED_ROOT}/`)) {
+      const parsedUrl = new URL(longUrl);
+      parsedUrl.protocol = 'https';
+      parsedUrl.host = PROFILER_URL_REQUIRED_ROOT;
+      parsedUrl.port = '';
+      longUrl = parsedUrl.toString();
+    }
   }
 
   const ENDPOINT = `${PROFILER_SERVER_ORIGIN}/shorten`;
@@ -43,6 +50,10 @@ export async function shortenUrl(urlToShorten: string): Promise<string> {
 }
 
 export async function expandUrl(shortUrl: string): Promise<string> {
+  if (!ENABLE_URL_SHORTENING) {
+    return shortUrl;
+  }
+
   const ENDPOINT = `${PROFILER_SERVER_ORIGIN}/expand`;
   const payload = {
     shortUrl,

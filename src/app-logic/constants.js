@@ -110,14 +110,29 @@ export const GOOGLE_STORAGE_BUCKET = 'profile-store';
 // This defines our server-side endpoint. This is currently used to publish
 // profiles and manage shortlinks.
 
+// This is Unity's production server:
+export const PROFILER_SERVER_ORIGIN = 'https://profiler-dot-unity-eng-arch-dev.uw.r.appspot.com';
+
 // This is the production server:
-export const PROFILER_SERVER_ORIGIN = 'https://api.profiler.firefox.com';
+// export const PROFILER_SERVER_ORIGIN = 'https://api.profiler.firefox.com';
 
 // This is the deployment from the main branch:
 // export const PROFILER_SERVER_ORIGIN = 'https://dev.firefoxprofiler.nonprod.cloudops.mozgcp.net';
 
 // This is your local server:
 // export const PROFILER_SERVER_ORIGIN = 'http://localhost:5252';
+
+// PROFILER_URL_REQUIRED_ROOT
+// --------------------------
+// If shortening is enabled and this is not null, all full URLs will be forced to have
+// this host before being shortened.
+export const PROFILER_URL_REQUIRED_ROOT = "profiler-dot-unity-eng-arch-dev.uw.r.appspot.com";
+//export const PROFILER_URL_REQUIRED_ROOT = "profiler.firefox.com";
+
+// ENABLE_URL_SHORTENING
+// ---------------------
+// If false, URL shortening will not be used.
+export const ENABLE_URL_SHORTENING = true;
 
 // SYMBOL_SERVER_URL
 // -----------------
@@ -135,3 +150,4 @@ export const INSTANT: MarkerPhase = 0;
 export const INTERVAL: MarkerPhase = 1;
 export const INTERVAL_START: MarkerPhase = 2;
 export const INTERVAL_END: MarkerPhase = 3;
+

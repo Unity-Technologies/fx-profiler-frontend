@@ -62,7 +62,7 @@ import {
 import { computeActiveTabTracks } from 'firefox-profiler/profile-logic/active-tab';
 import { setDataSource } from './profile-view';
 import { fatalError } from './errors';
-import { GOOGLE_STORAGE_BUCKET } from 'firefox-profiler/app-logic/constants';
+import { GOOGLE_STORAGE_BUCKET, PROFILER_URL_REQUIRED_ROOT } from 'firefox-profiler/app-logic/constants';
 import {
   determineTimelineType,
   hasUsefulSamples,
@@ -1542,7 +1542,8 @@ export function retrieveProfilesToCompare(
           if (
             url.startsWith('https://perfht.ml/') ||
             url.startsWith('https://share.firefox.dev/') ||
-            url.startsWith('https://bit.ly/')
+            url.startsWith('https://bit.ly/') ||
+            url.startsWith(`https://${PROFILER_URL_REQUIRED_ROOT}/`)
           ) {
             url = await expandUrl(url);
           }
