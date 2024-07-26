@@ -151,6 +151,11 @@ if (config.mode === 'production') {
         // While excluding the service worker file isn't necessary to work, it's
         // convenient that we can just access it from a browser.
         /^\/sw\.js/,
+        // Access to /api/.* should not be handled by index; will be handled by
+        // the api server.
+        /^\/(shorten$|expand$|compressed-store$|api\/)/,
+        // Same with /s/.*; that's part of URL shortening
+        /^\/s\//,
       ],
       exclude: [
         // exclude user docs and photon from the cache
@@ -164,6 +169,8 @@ if (config.mode === 'production') {
         /\.map$/,
         // nor the service worker imported script
         'service-worker-compat.js',
+        // nor the api server
+        'api',
       ],
       // This is the service worker file name. It should never change if we want
       // that the browser updates it. If this changes it will never be updated
