@@ -921,9 +921,8 @@ function getSymbolStore(
 
     requestSymbolsFromBrowser: async (requests) => {
       if (browserConnection === null) {
-        throw new Error(
-          'No connection to the browser, cannot run querySymbolicationApi'
-        );
+        console.warn('No connection to the browser, cannot run querySymbolicationApi');
+        return new Promise((resolve, reject) => { resolve([]); });
       }
 
       const bc = browserConnection;
@@ -937,9 +936,8 @@ function getSymbolStore(
 
     requestSymbolTableFromBrowser: async (lib) => {
       if (browserConnection === null) {
-        throw new Error(
-          'No connection to the browser, cannot obtain symbol tables'
-        );
+        console.warn('No connection to the browser, cannot obtain symbol tables');
+        return new Promise((resolve, reject) => { resolve([]); });
       }
 
       const { debugName, breakpadId } = lib;

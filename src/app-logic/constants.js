@@ -114,7 +114,7 @@ export const GOOGLE_STORAGE_BUCKET = 'unity-profile-storage-dev';
 // profiles and manage shortlinks.
 
 // This is Unity's production server:
-//export const PROFILER_SERVER_ORIGIN = 'https://profiler.cds.internal.unity3d.com';
+export const PROFILER_SERVER_ORIGIN = 'https://profiler.cds.internal.unity3d.com';
 
 // This is the production server:
 // export const PROFILER_SERVER_ORIGIN = 'https://api.profiler.firefox.com';
@@ -123,7 +123,7 @@ export const GOOGLE_STORAGE_BUCKET = 'unity-profile-storage-dev';
 // export const PROFILER_SERVER_ORIGIN = 'https://dev.firefoxprofiler.nonprod.cloudops.mozgcp.net';
 
 // This is your local server:
-export const PROFILER_SERVER_ORIGIN = 'http://localhost:5252';
+// export const PROFILER_SERVER_ORIGIN = 'http://localhost:5252';
 
 // PROFILER_URL_REQUIRED_ROOT
 // --------------------------
