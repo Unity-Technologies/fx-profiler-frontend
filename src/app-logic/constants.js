@@ -95,8 +95,11 @@ export const ACTIVE_TAB_TIMELINE_RESOURCES_HEADER_HEIGHT = 20;
 // ---------------------
 // This defines which bucket we fetch profile data at load time.
 
+// Unity's bucket
+export const GOOGLE_STORAGE_BUCKET = 'unity-profile-storage-dev';
+
 // Google storage bucket, where production profile data is stored:
-export const GOOGLE_STORAGE_BUCKET = 'profile-store';
+//export const GOOGLE_STORAGE_BUCKET = 'profile-store';
 
 // You can also use one of the following values instead:
 // To use the bucket used by the server deployment for the main branch:
@@ -111,7 +114,7 @@ export const GOOGLE_STORAGE_BUCKET = 'profile-store';
 // profiles and manage shortlinks.
 
 // This is Unity's production server:
-export const PROFILER_SERVER_ORIGIN = 'https://profiler-api.cds.unity3d.com';
+//export const PROFILER_SERVER_ORIGIN = 'https://profiler.cds.internal.unity3d.com';
 
 // This is the production server:
 // export const PROFILER_SERVER_ORIGIN = 'https://api.profiler.firefox.com';
@@ -120,13 +123,13 @@ export const PROFILER_SERVER_ORIGIN = 'https://profiler-api.cds.unity3d.com';
 // export const PROFILER_SERVER_ORIGIN = 'https://dev.firefoxprofiler.nonprod.cloudops.mozgcp.net';
 
 // This is your local server:
-// export const PROFILER_SERVER_ORIGIN = 'http://localhost:5252';
+export const PROFILER_SERVER_ORIGIN = 'http://localhost:5252';
 
 // PROFILER_URL_REQUIRED_ROOT
 // --------------------------
 // If shortening is enabled and this is not null, all full URLs will be forced to have
-// this host before being shortened.  This should be different than the PROFILER_SERVER_ORIGIN.
-export const PROFILER_URL_REQUIRED_ROOT = 'profiler.cds.unity3d.com';
+// this host before being shortened.
+export const PROFILER_URL_REQUIRED_ROOT = 'profiler.cds.internal.unity3d.com';
 //export const PROFILER_URL_REQUIRED_ROOT = 'profiler.firefox.com';
 
 // ENABLE_URL_SHORTENING

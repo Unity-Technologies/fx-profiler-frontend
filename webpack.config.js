@@ -151,9 +151,9 @@ if (config.mode === 'production') {
         // While excluding the service worker file isn't necessary to work, it's
         // convenient that we can just access it from a browser.
         /^\/sw\.js/,
-        // Access to /api/.* should not be handled by index; will be handled by
-        // the api server.
-        /^\/(shorten$|expand$|compressed-store$|api\/)/,
+        // Access to API server methods (and eventually api.*) is not be handled by index;
+        // will be handled by the api server.
+        /^\/(shorten$|expand$|compressed-store$|compressed-store-url$|api\/)/,
         // Same with /s/.*; that's part of URL shortening
         /^\/s\//,
       ],

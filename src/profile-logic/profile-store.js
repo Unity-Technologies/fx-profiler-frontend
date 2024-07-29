@@ -7,6 +7,7 @@ import { PROFILER_SERVER_ORIGIN } from 'firefox-profiler/app-logic/constants';
 
 // This is the server we use to publish new profiles.
 const PUBLISHING_ENDPOINT = `${PROFILER_SERVER_ORIGIN}/compressed-store`;
+const PUBLISHING_URL_REQUEST_ENDPOINT = `${PROFILER_SERVER_ORIGIN}/compressed-store-url`;
 
 const ACCEPT_HEADER_VALUE = 'application/vnd.firefox-profiler+json;version=1.0';
 
@@ -20,6 +21,74 @@ export class UploadAbortedError extends Error {
 }
 
 export function uploadBinaryProfileData() {
+  // Try using compressed-sture-url to fetch a URL; if it fails or returns an error,
+  // then go back to the Direct upload method.
+  try {
+    return uploadBinaryProfileIndirect();
+  } catch (e) {
+    console.warning('uploadBinaryProfileIndirect() failed, using uploadBinaryProfileDirect()', e);
+  }
+
+  return uploadBinaryProfileDataDirect();
+}
+
+// Configure the given xhr request for the profile upload.
+// If overrideSuccessReponse is specified, it is used as the success resolve value;
+// otherwise, the response to the xhr is.
+// This code is shared by both paths.
+function configureXhrForUpload(xhr: XMLHttpRequest, resolve, reject, overrideSuccessResponse?: string = null) {
+  xhr.onload = () => {
+    switch (xhr.status) {
+      case 413:
+        reject(
+          new Error(
+            oneLine`
+              The profile size is too large.
+              You can try enabling some of the privacy features to trim its size down.
+            `
+          )
+        );
+        break;
+      default:
+        if (xhr.status >= 200 && xhr.status <= 299) {
+          // Success!
+          if (overrideSuccessResponse !== null) {
+            resolve(overrideSuccessResponse);
+          } else {
+            resolve(xhr.responseText);
+          }
+        } else {
+          reject(
+            new Error(
+              `xhr onload with status != 200, xhr.statusText: ${xhr.statusText}`
+            )
+          );
+        }
+    }
+  };
+
+  xhr.onerror = () => {
+    console.error(
+      'There was an XHR network error in uploadBinaryProfileData()',
+      xhr
+    );
+
+    let errorMessage =
+      'Unable to make a connection to publish the profile.';
+    if (xhr.statusText) {
+      errorMessage += ` The error response was: ${xhr.statusText}`;
+    }
+    reject(new Error(errorMessage));
+  };
+
+  xhr.onabort = () => {
+    reject(
+      new UploadAbortedError('The upload has been aborted by the user.')
+    );
+  };
+}
+
+function uploadBinaryProfileIndirect() {
   const xhr = new XMLHttpRequest();
   let isAborted = false;
 
@@ -38,51 +107,60 @@ export function uploadBinaryProfileData() {
           return;
         }
 
-        xhr.onload = () => {
-          switch (xhr.status) {
-            case 413:
-              reject(
-                new Error(
-                  oneLine`
-                    The profile size is too large.
-                    You can try enabling some of the privacy features to trim its size down.
-                  `
-                )
-              );
-              break;
-            default:
-              if (xhr.status >= 200 && xhr.status <= 299) {
-                // Success!
-                resolve(xhr.responseText);
-              } else {
-                reject(
-                  new Error(
-                    `xhr onload with status != 200, xhr.statusText: ${xhr.statusText}`
-                  )
-                );
+        fetch(PUBLISHING_URL_REQUEST_ENDPOINT).then((r) => {
+          if (!r.ok) {
+            console.error('Error fetching URL to publish profile', r);
+            reject(new Error('Error fetching URL to publish profile'));
+            return;
+          }
+
+          r.json().then((urlData) => {
+            let jwt = urlData.jwt;
+            let uploadUrl = urlData.url;
+
+            configureXhrForUpload(xhr, resolve, reject, jwt);
+
+            xhr.upload.onprogress = (e) => {
+              if (progressChangeCallback && e.lengthComputable) {
+                progressChangeCallback(e.loaded / e.total);
               }
-          }
-        };
+            };
 
-        xhr.onerror = () => {
-          console.error(
-            'There was an XHR network error in uploadBinaryProfileData()',
-            xhr
-          );
+            xhr.open('PUT', uploadUrl);
+            xhr.setRequestHeader('Content-Type', 'application/vnd.firefox-profiler+json');
+            xhr.send(data);
+          }).catch((e) => {
+            console.error('Error parsing JSON from URL to publish profile', e);
+            reject(e);
+          });
+        }).catch((e) => {
+          console.error('Error fetching URL to publish profile', e);
+          reject(e);
+        });
+      }),
+  };
+}
 
-          let errorMessage =
-            'Unable to make a connection to publish the profile.';
-          if (xhr.statusText) {
-            errorMessage += ` The error response was: ${xhr.statusText}`;
-          }
-          reject(new Error(errorMessage));
-        };
+function uploadBinaryProfileDataDirect() {
+  const xhr = new XMLHttpRequest();
+  let isAborted = false;
 
-        xhr.onabort = () => {
-          reject(
-            new UploadAbortedError('The error has been aborted by the user.')
-          );
-        };
+  return {
+    abortUpload: (): void => {
+      isAborted = true;
+      xhr.abort();
+    },
+    startUpload: (
+      data: $TypedArray,
+      progressChangeCallback?: (number) => mixed
+    ): Promise<string> =>
+      new Promise((resolve, reject) => {
+        if (isAborted) {
+          reject(new UploadAbortedError('The request was already aborted.'));
+          return;
+        }
+
+        configureXhrForUpload(xhr, resolve, reject);
 
         xhr.upload.onprogress = (e) => {
           if (progressChangeCallback && e.lengthComputable) {
