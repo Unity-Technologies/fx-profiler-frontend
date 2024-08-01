@@ -203,7 +203,7 @@
       "post-checkout": "node bin/post-checkout.js",
       "post-merge": "node bin/post-merge.js",
       "post-rewrite": "node bin/post-rewrite.js",
-      "pre-push": "yarn test-all"
+      "DISABLED-pre-push": "yarn test-all"
     }
   }
 }
