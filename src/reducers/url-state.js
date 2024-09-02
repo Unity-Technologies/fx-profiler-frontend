@@ -661,6 +661,19 @@ const symbolServerUrl: Reducer<string | null> = (state = null) => {
   return state;
 };
 
+const autoUploadReplyUrl: Reducer<string | null> = (state = null, action) => {
+  switch (action.type) {
+    case 'PROFILE_PUBLISHED':
+    case 'SANITIZED_PROFILE_PUBLISHED':
+      // Once the profile has been published, this goes away; we would have
+      // already saved the pre-published state URL for where we need it.
+      // Without this, the auto-publish would be part of the public URL.
+      return null;
+    default:
+      return state;
+  }
+};
+
 /**
  * These values are specific to an individual full profile.
  */
@@ -751,6 +764,7 @@ const urlStateReducer: Reducer<UrlState> = wrapReducerInResetter(
     profileName,
     timelineTrackOrganization,
     symbolServerUrl,
+    autoUploadReplyUrl,
   })
 );
 

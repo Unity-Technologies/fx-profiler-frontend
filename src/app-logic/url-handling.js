@@ -185,6 +185,7 @@ type BaseQuery = {|
   timelineType: string,
   sourceView: string,
   assemblyView: string,
+  autoUploadReplyUrl: string,
   ...FullProfileSpecificBaseQuery,
   ...ActiveTabProfileSpecificBaseQuery,
   ...OriginsProfileSpecificBaseQuery,
@@ -376,6 +377,7 @@ export function getQueryStringFromUrlState(urlState: UrlState): string {
       urlState.profileSpecific.timelineType === 'cpu-category'
         ? undefined
         : urlState.profileSpecific.timelineType,
+    autoUploadReplyUrl: urlState.autoUploadReplyUrl || undefined,
   }: BaseQueryShape);
 
   // Depending on which panel is active, also show tab-specific query parameters.
@@ -633,6 +635,7 @@ export function stateFromLocation(
       query.view,
       tabID
     ),
+    autoUploadReplyUrl: query.autoUploadReplyUrl || null,
     profileSpecific: {
       implementation,
       lastSelectedCallTreeSummaryStrategy: toValidCallTreeSummaryStrategy(

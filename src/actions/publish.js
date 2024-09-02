@@ -145,6 +145,8 @@ async function persistJustUploadedProfileInformationToDb(
     );
   }
 
+  await dispatch(notifyAutoUploadUrl(prepublishedState.urlState.autoUploadReplyUrl, predictedUrl));
+
   const profileMeta = getProfile(prepublishedState).meta;
   const profileFilterPageData = getProfileFilterPageData(prepublishedState);
 
@@ -440,5 +442,35 @@ export function hideStaleProfile(): ThunkAction<Promise<void>> {
       // This timing should match .profileViewerFadeOut.
       setTimeout(resolve, 300);
     });
+  };
+}
+
+export function notifyAutoUploadUrl(autoUploadReplyUrl, predictedUrl): ThunkAction<Promise<void>> {
+  return async (dispatch, getState) => {
+    var url = new URL(predictedUrl, window.location);
+
+    if (!autoUploadReplyUrl) {
+      return Promise.resolve();
+    }
+
+    if (selectors.profile.getSymbolicationStatus(getState()) != "DONE") {
+      console.error("SYMBOLICATION NOT COMPLETE");
+    }
+
+    var replyUrl = new URL(autoUploadReplyUrl, window.location);
+
+    var replyResult = {
+      profileUrl: url.toString(),
+    };
+
+    await fetch(replyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(replyResult),
+    });
+
+    return Promise.resolve();
   };
 }
