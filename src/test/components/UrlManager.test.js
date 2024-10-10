@@ -41,6 +41,11 @@ describe('UrlManager', function () {
   }
 
   function setup(urlPath: ?string) {
+    jest
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue(
+        'Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0'
+      );
     if (typeof urlPath === 'string') {
       window.location.replace(`http://localhost${urlPath}`);
     }
@@ -129,9 +134,7 @@ describe('UrlManager', function () {
     await waitUntilUrlSetupPhase('done');
     expect(getDataSource(getState())).toMatch('from-browser');
 
-    // This is called by React 18 until we move to the createRoot API.
-    //expect(console.error).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   it('redirects from-file back to no data source', async function () {

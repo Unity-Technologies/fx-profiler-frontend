@@ -40,7 +40,14 @@ import {
   getActiveTabID,
   getMarkerSchemaByName,
 } from 'firefox-profiler/selectors';
-import { getSelectedTab } from 'firefox-profiler/selectors/url-state';
+import {
+  getSelectedTab,
+  getTabFilter,
+} from 'firefox-profiler/selectors/url-state';
+import {
+  getTabToThreadIndexesMap,
+  getThreadActivityScores,
+} from 'firefox-profiler/selectors/profile';
 import {
   withHistoryReplaceStateAsync,
   withHistoryReplaceStateSync,
@@ -288,9 +295,15 @@ export function finalizeFullProfileView(
   return (dispatch, getState) => {
     const hasUrlInfo = maybeSelectedThreadIndexes !== null;
 
-    const globalTracks = computeGlobalTracks(profile);
+    const tabToThreadIndexesMap = getTabToThreadIndexesMap(getState());
+    const globalTracks = computeGlobalTracks(
+      profile,
+      hasUrlInfo ? getTabFilter(getState()) : null,
+      tabToThreadIndexesMap
+    );
     const localTracksByPid = computeLocalTracksByPid(
       profile,
+      globalTracks,
       getMarkerSchemaByName(getState())
     );
 
@@ -338,7 +351,11 @@ export function finalizeFullProfileView(
       // This is the case for the initial profile load.
       // We also get here if the URL info was ignored, for example if
       // respecting it would have caused all threads to become hidden.
-      hiddenTracks = computeDefaultHiddenTracks(tracksWithOrder, profile);
+      hiddenTracks = computeDefaultHiddenTracks(
+        tracksWithOrder,
+        profile,
+        getThreadActivityScores(getState())
+      );
     }
 
     const selectedThreadIndexes = initializeSelectedThreadIndex(
@@ -914,6 +931,11 @@ function getSymbolStore(
             body: json,
             method: 'POST',
             mode: 'cors',
+            // Use a profiler-specific user agent, so that the symbolication server knows
+            // what's making this request.
+            headers: new Headers({
+              'User-Agent': `FirefoxProfiler/1.0 (+${location.origin})`,
+            }),
           });
           return response.json();
         }
@@ -993,39 +1015,47 @@ export async function doSymbolicateProfile(
   dispatch(doneSymbolicating());
 }
 
+// From a BrowserConnectionStatus, this unwraps the included browserConnection
+// when possible.
+export function unwrapBrowserConnection(
+  browserConnectionStatus: BrowserConnectionStatus
+): BrowserConnection {
+  switch (browserConnectionStatus.status) {
+    case 'ESTABLISHED':
+      // Good. This is the normal case.
+      break;
+    // The other cases are error cases.
+    case 'NOT_FIREFOX':
+      throw new Error('/from-browser only works in Firefox browsers');
+    case 'NO_ATTEMPT':
+      throw new Error(
+        'retrieveProfileFromBrowser should never be called while browserConnectionStatus is NO_ATTEMPT'
+      );
+    case 'WAITING':
+      throw new Error(
+        'retrieveProfileFromBrowser should never be called while browserConnectionStatus is WAITING'
+      );
+    case 'DENIED':
+      throw browserConnectionStatus.error;
+    case 'TIMED_OUT':
+      throw new Error('Timed out when waiting for reply to WebChannel message');
+    default:
+      throw assertExhaustiveCheck(browserConnectionStatus.status);
+  }
+
+  // Now we know that browserConnectionStatus.status === 'ESTABLISHED'.
+  return browserConnectionStatus.browserConnection;
+}
+
 export function retrieveProfileFromBrowser(
   browserConnectionStatus: BrowserConnectionStatus,
   initialLoad: boolean = false
 ): ThunkAction<Promise<void>> {
   return async (dispatch) => {
     try {
-      switch (browserConnectionStatus.status) {
-        case 'ESTABLISHED':
-          // Good. This is the normal case.
-          break;
-        // The other cases are error cases.
-        case 'NOT_FIREFOX':
-          throw new Error('/from-browser only works in Firefox browsers');
-        case 'NO_ATTEMPT':
-          throw new Error(
-            'retrieveProfileFromBrowser should never be called while browserConnectionStatus is NO_ATTEMPT'
-          );
-        case 'WAITING':
-          throw new Error(
-            'retrieveProfileFromBrowser should never be called while browserConnectionStatus is WAITING'
-          );
-        case 'DENIED':
-          throw browserConnectionStatus.error;
-        case 'TIMED_OUT':
-          throw new Error(
-            'Timed out when waiting for reply to WebChannel message'
-          );
-        default:
-          throw assertExhaustiveCheck(browserConnectionStatus.status);
-      }
-
-      // Now we know that browserConnectionStatus.status === 'ESTABLISHED'.
-      const browserConnection = browserConnectionStatus.browserConnection;
+      const browserConnection = unwrapBrowserConnection(
+        browserConnectionStatus
+      );
 
       // XXX update state to show that we're connected to the browser
 
@@ -1281,7 +1311,7 @@ async function _extractZipFromResponse(
     // Catch the error if unable to load the zip.
     return zip;
   } catch (error) {
-    const message = 'Unable to unzip the zip file.';
+    const message = 'Unable to open the archive file.';
     reportError(message);
     reportError('Error:', error);
     reportError('Fetch response:', response);
@@ -1407,7 +1437,7 @@ export function retrieveProfileOrZipFromUrl(
         default:
           throw assertExhaustiveCheck(
             response.responseType,
-            'Expected to receive a zip file or profile from _fetchProfile.'
+            'Expected to receive an archive or profile from _fetchProfile.'
           );
       }
     } catch (error) {
@@ -1717,5 +1747,113 @@ export function retrieveProfileForRawUrl(
 
     // Profile may be null if the response was a zip file.
     return getProfileOrNull(getState());
+  };
+}
+
+/**
+ * Change the selected browser tab filter for the profile.
+ * TabID here means the unique ID for a give browser tab and corresponds to
+ * multiple pages in the `profile.pages` array.
+ * If it's null it will undo the filter and will show the full profile.
+ */
+export function changeTabFilter(tabID: TabID | null): ThunkAction<void> {
+  return (dispatch, getState) => {
+    const profile = getProfile(getState());
+    const tabToThreadIndexesMap = getTabToThreadIndexesMap(getState());
+    // Compute the global tracks, they will be filtered by tabID if it's
+    // non-null and will not filter if it's null.
+    const globalTracks = computeGlobalTracks(
+      profile,
+      tabID,
+      tabToThreadIndexesMap
+    );
+    const localTracksByPid = computeLocalTracksByPid(
+      profile,
+      globalTracks,
+      getMarkerSchemaByName(getState())
+    );
+
+    const legacyThreadOrder = getLegacyThreadOrder(getState());
+    const globalTrackOrder = initializeGlobalTrackOrder(
+      globalTracks,
+      null, // Passing null to urlGlobalTrackOrder to reinitilize it.
+      legacyThreadOrder
+    );
+    const localTrackOrderByPid = initializeLocalTrackOrderByPid(
+      null, // Passing null to urlTrackOrderByPid to reinitilize it.
+      localTracksByPid,
+      legacyThreadOrder,
+      profile
+    );
+
+    const tracksWithOrder = {
+      globalTracks,
+      globalTrackOrder,
+      localTracksByPid,
+      localTrackOrderByPid,
+    };
+
+    let hiddenTracks = null;
+
+    // For non-initial profile loads, initialize the set of hidden tracks from
+    // information in the URL.
+    const legacyHiddenThreads = getLegacyHiddenThreads(getState());
+    if (legacyHiddenThreads !== null) {
+      hiddenTracks = tryInitializeHiddenTracksLegacy(
+        tracksWithOrder,
+        legacyHiddenThreads,
+        profile
+      );
+    }
+    if (hiddenTracks === null) {
+      // Compute a default set of hidden tracks.
+      // This is the case for the initial profile load.
+      // We also get here if the URL info was ignored, for example if
+      // respecting it would have caused all threads to become hidden.
+      hiddenTracks = computeDefaultHiddenTracks(
+        tracksWithOrder,
+        profile,
+        getThreadActivityScores(getState())
+      );
+    }
+
+    const selectedThreadIndexes = initializeSelectedThreadIndex(
+      null, // maybeSelectedThreadIndexes
+      getVisibleThreads(tracksWithOrder, hiddenTracks),
+      profile
+    );
+
+    // If the currently selected tab is only visible when the selected track
+    // has samples, verify that the selected track has samples, and if not
+    // select the marker chart.
+    let selectedTab = getSelectedTab(getState());
+    if (tabsShowingSampleData.includes(selectedTab)) {
+      let hasSamples = false;
+      for (const threadIndex of selectedThreadIndexes) {
+        const thread = profile.threads[threadIndex];
+        const { samples, jsAllocations, nativeAllocations } = thread;
+        hasSamples = [samples, jsAllocations, nativeAllocations].some((table) =>
+          hasUsefulSamples(table, thread)
+        );
+        if (hasSamples) {
+          break;
+        }
+      }
+      if (!hasSamples) {
+        selectedTab = 'marker-chart';
+      }
+    }
+
+    dispatch({
+      type: 'CHANGE_TAB_FILTER',
+      tabID,
+      selectedThreadIndexes,
+      selectedTab,
+      globalTracks,
+      globalTrackOrder,
+      localTracksByPid,
+      localTrackOrderByPid,
+      ...hiddenTracks,
+    });
   };
 }
