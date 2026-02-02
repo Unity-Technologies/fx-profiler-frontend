@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -30,6 +24,7 @@ AppHeader--github-icon =
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Das Profil konnte nicht importiert werden.
 AppViewRouter--error-unpublished = Das Profil von { -firefox-brand-name } konnte nicht abgerufen werden.
 AppViewRouter--error-from-file = Die Datei konnte nicht gelesen oder das darin enthaltene Profil nicht verarbeitet werden.
 AppViewRouter--error-local = Noch nicht implementiert.
@@ -43,6 +38,14 @@ AppViewRouter--error-from-localhost-url-safari = Aufgrund einer <a>spezifischen 
     .title = Safari kann lokale Profile nicht importieren
 AppViewRouter--route-not-found--home =
     .specialMessage = Die URL, die Sie erreichen wollten, wurde nicht erkannt.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (inlined)
+    .title = { $function } wurde durch den Compiler zur Inline-Funktion ihres Aufrufers.
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -112,6 +115,7 @@ CallNodeContextMenu--searchfox = Name der Funktion auf Searchfox nachschlagen
 CallNodeContextMenu--copy-function-name = Funktionsname kopieren
 CallNodeContextMenu--copy-script-url = Skript-URL kopieren
 CallNodeContextMenu--copy-stack = Stapel kopieren
+CallNodeContextMenu--show-the-function-in-devtools = Funktion in den Entwicklerwerkzeugen anzeigen
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -311,6 +315,7 @@ Home--additional-content-title = Bestehende Profile laden
 Home--additional-content-content = Sie können eine Profildatei per <strong>Ziehen und Ablegen</strong> hierher bewegen, um sie zu laden, oder:
 Home--compare-recordings-info = Sie können auch Aufnahmen vergleichen. <a>Öffnen Sie die Vergleichsschnittstelle.</a>
 Home--your-recent-uploaded-recordings-title = Ihre kürzlich hochgeladenen Aufzeichnungen
+Home--dark-mode-title = Dunkler Modus
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
@@ -318,6 +323,15 @@ Home--load-files-from-other-tools2 =
     <perf>Linux perf</perf>, <simpleperf>Android SimplePerf</simpleperf>, die
     Chrome Performance Panel, <androidstudio>Android Studio</androidstudio> oder
     eine Datei im <dhat>dhat-Format</dhat> oder <traceevent>Googles Trace-Event-Format</traceevent>. <write>Erfahren Sie, wie Sie Ihren eigenen Importeur schreiben</write>.
+Home--install-chrome-extension = Installieren Sie die Chrome-Erweiterung
+Home--chrome-extension-instructions =
+    Verwenden Sie die <a>{ -profiler-brand-name }-Erweiterung für Chrome</a>,
+    um Leistungsprofile in Chrome zu erfassen und im { -profiler-brand-name }
+    zu analysieren. Installieren Sie die Erweiterung aus dem Chrome Web Store.
+Home--chrome-extension-recording-instructions =
+    Verwenden Sie nach der Installation das Symbolleisten-Symbol der Erweiterung
+    oder die Tastenkombinationen zum Starten und Stoppen der Profilerstellung. Sie können auch
+    Profile exportieren und hier zur detaillierten Analyse laden.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
@@ -392,6 +406,13 @@ MarkerContextMenu--select-the-sender-thread = Absender-Thread „<strong>{ $thre
 #   $filter (String) - Search string that will be used to filter the markers.
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = Stichproben außerhalb der Markierungen verwerfen, die mit „<strong>{ $filter }</strong>“ übereinstimmen
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = Markierungstabelle als Reintext kopieren
+MarkerCopyTableContextMenu--copy-table-as-markdown = Markierungstabelle als Markdown kopieren
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
@@ -400,6 +421,14 @@ MarkerSettings--panel-search =
     .title = Nur Markierungen anzeigen, die zu einem bestimmten Namen passen
 MarkerSettings--marker-filters =
     .title = Filter für Markierungen
+MarkerSettings--copy-table =
+    .title = Tabelle als Text kopieren
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = Die Anzahl der Zeilen überschreitet das Limit: { $rows } > { $maxRows }. Nur die ersten { $maxRows } Zeilen werden kopiert.
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -413,6 +442,16 @@ MarkerTable--start = Beginn
 MarkerTable--duration = Dauer
 MarkerTable--name = Name
 MarkerTable--details = Details
+
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .title = Nur passende Markierungen anzeigen: „{ $filter }“
+    .aria-label = Nur passende Markierungen anzeigen: „{ $filter }“
 
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
@@ -457,11 +496,16 @@ MenuButtons--index--hide-moreInfo-button = Weniger anzeigen
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-        [one] { $physicalCPUs } physischer Kern
-       *[other] { $physicalCPUs } physische Kerne
-    },{ $logicalCPUs ->
-        [one] { $logicalCPUs } logischer Kern
-       *[other] { $logicalCPUs } logische Kerne
+        [one]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } physischer Kern,{ $logicalCPUs } logischer Kern
+               *[other] { $physicalCPUs } physischer Kern,{ $logicalCPUs } logische Kerne
+            }
+       *[other]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } physische Kerne,{ $logicalCPUs } logischer Kern
+               *[other] { $physicalCPUs } physische Kerne,{ $logicalCPUs } logische Kerne
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -485,6 +529,8 @@ MenuButtons--metaInfo--profiling-started = Aufzeichnungsbeginn:
 MenuButtons--metaInfo--profiling-session = Aufzeichnungslänge:
 MenuButtons--metaInfo--main-process-started = Hauptprozess gestartet:
 MenuButtons--metaInfo--main-process-ended = Hauptprozess beendet:
+MenuButtons--metaInfo--file-name = Dateiname:
+MenuButtons--metaInfo--file-size = Dateigröße:
 MenuButtons--metaInfo--interval = Intervall:
 MenuButtons--metaInfo--buffer-capacity = Pufferkapazität:
 MenuButtons--metaInfo--buffer-duration = Pufferdauer:
@@ -604,6 +650,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 
 PanelSearch--search-field-hint = Wussten Sie, dass Sie das Komma (,) verwenden können, um mit mehreren Begriffen zu suchen?
 
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = Profilnamen bearbeiten
+ProfileName--edit-profile-name-input =
+    .title = Profilnamen bearbeiten
+    .aria-label = Profilname
+
 ## Profile Delete Button
 
 # This string is used on the tooltip of the published profile links delete button in uploaded recordings page.
@@ -651,6 +705,7 @@ ProfileFilterNavigator--full-range-with-duration = Vollständiger Zeitraum ({ $f
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Das Profil wird importiert und verarbeitet…
 ProfileLoaderAnimation--loading-unpublished = Das Profil wird direkt von { -firefox-brand-name } importiert…
 ProfileLoaderAnimation--loading-from-file = Datei lesen und Profil verarbeiten…
 ProfileLoaderAnimation--loading-local = Noch nicht implementiert.
@@ -690,8 +745,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = Alle Frames
     .title = Die Stack-Frames nicht filtern
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Nur die Stack-Frames anzeigen, die sich auf JavaScript-Ausführung beziehen
+StackSettings--implementation-script = Skript
+    .title = Nur Stack-Frames anzeigen, die mit Skriptausführung zusammenhängen.
 StackSettings--implementation-native2 = Native
     .title = Nur die Stack-Frames für nativen Quelltext anzeigen
 # This label is displayed in the marker chart and marker table panels only.
@@ -712,6 +767,7 @@ StackSettings--call-tree-strategy-native-deallocations-sites = Freigegebene Webs
 StackSettings--invert-call-stack = Aufrufstack umkehren
     .title = Sortieren nach in einem Aufrufknoten, die Unterpunkte werden ignoriert.
 StackSettings--show-user-timing = Nutzer-Zeitrechnung anzeigen
+StackSettings--use-stack-chart-same-widths = Für jeden Stapel die gleiche Breite verwenden
 StackSettings--panel-search =
     .label = Stacks filtern:
     .title = Nur Stacks anzeigen, die eine Funktion enthalten, deren Namen zu diesem Unterstring passen
@@ -1081,6 +1137,13 @@ SourceView--not-in-archive-error-when-obtaining-source = Die Datei { $pathInArch
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = Das Archiv unter { $url } konnte nicht geparst werden: { $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = Der Browser konnte die Quelltextdatei für { $url } mit der sourceUuid { $sourceUuid } nicht abrufen: { $errorMessage }.
 
 ## Toggle buttons in the top right corner of the bottom box
 
@@ -1092,6 +1155,17 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = Assembly-Ansicht ausblenden
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = Zurück
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = Weiter
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = { $current } von { $total }
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.

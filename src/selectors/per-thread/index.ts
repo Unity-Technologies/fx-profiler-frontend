@@ -1,0 +1,260 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+import { createSelector } from 'reselect';
+import memoize from 'memoize-immutable';
+import * as UrlState from '../url-state';
+import * as ProfileData from '../../profile-logic/profile-data';
+import {
+  getThreadSelectorsWithMarkersPerThread,
+  getBasicThreadSelectorsPerThread,
+  type ThreadSelectorsPerThread,
+} from './thread';
+import {
+  getMarkerSelectorsPerThread,
+  type MarkerSelectorsPerThread,
+} from './markers';
+import {
+  getStackAndSampleSelectorsPerThread,
+  type StackAndSampleSelectorsPerThread,
+} from './stack-sample';
+import {
+  getComposedSelectorsPerThread,
+  type ComposedSelectorsPerThread,
+} from './composed';
+import * as ProfileSelectors from '../profile';
+import { ensureExists, getFirstItemFromSet } from '../../utils/types';
+
+import type {
+  ThreadIndex,
+  Selector,
+  ThreadsKey,
+  State,
+} from 'firefox-profiler/types';
+
+import type { TimingsForPath } from '../../profile-logic/profile-data';
+
+/**
+ * Traditional selectors only take one parameter, the `State` object. The selectors
+ * memoize based off of the `State` of the last call. If a ThreadIndex parameter were
+ * passed in, the memoization would break as the ThreadIndex would change many times
+ * across a single render call. Instead for ThreadSelectors, duplicate the selector
+ * functions once per thread in the profile, so each memoizes separately.
+ */
+export type ThreadSelectors = ThreadSelectorsPerThread &
+  MarkerSelectorsPerThread &
+  StackAndSampleSelectorsPerThread &
+  ComposedSelectorsPerThread;
+
+/**
+ * This is the static object store that holds the selector functions.
+ */
+const _threadSelectorsCache: { [key: number]: ThreadSelectors } = {};
+const _mergedThreadSelectorsMemoized = memoize(
+  (threadsKey: ThreadsKey) => {
+    // We don't pass this set inside this memoization function since we create
+    // an intermediate Set whenever we need to access the cache. Memoize should
+    // only use threadsKey as the key.
+    const threadIndexes = new Set(('' + threadsKey).split(',').map((n) => +n));
+    return _buildThreadSelectors(threadIndexes, threadsKey);
+  },
+  { limit: 5 }
+);
+
+const getSingleThreadSelectors = (
+  threadIndex: ThreadIndex
+): ThreadSelectors => {
+  if (threadIndex in _threadSelectorsCache) {
+    return _threadSelectorsCache[threadIndex];
+  }
+
+  const threadIndexes = new Set([threadIndex]);
+  const selectors = _buildThreadSelectors(threadIndexes);
+  _threadSelectorsCache[threadIndex] = selectors;
+  return selectors;
+};
+
+/**
+ * This function does the work of building out the selectors for a given thread index.
+ * See the respective definitions in the functions getXXXXXSelectorsPerThread for
+ * what they specifically include.
+ */
+export const getThreadSelectors = (
+  oneOrManyThreadIndexes: ThreadIndex | Set<ThreadIndex>
+): ThreadSelectors => {
+  let threadIndex: null | ThreadIndex = null;
+  let threadIndexes: null | Set<ThreadIndex> = null;
+
+  if (typeof oneOrManyThreadIndexes === 'number') {
+    threadIndex = oneOrManyThreadIndexes;
+  } else {
+    threadIndexes = oneOrManyThreadIndexes;
+  }
+
+  // The thread selectors have two different caching strategies. For a single thread
+  // index, we will retain the cache forever. For a Set of more than one thread indexes
+  // we will only memoize the last used Set. Most likely, users will add on to a
+  // selection until they have the desired set of Threads. It would be very memory
+  // intensive to retain this set of selectors forever, as it can change frequently
+  // and with various different values.
+  if (threadIndex !== null) {
+    return getSingleThreadSelectors(threadIndex);
+  }
+
+  // This must be true with the logic above.
+  threadIndexes = ensureExists(threadIndexes);
+
+  return getThreadSelectorsFromThreadsKey(
+    ProfileData.getThreadsKey(threadIndexes),
+    threadIndexes
+  );
+};
+
+/**
+ * This function returns the selectors for a group of threads, based on the ThreadsKey.
+ * It only memoizes off of a single ThreadsKey. If that key changes, the caching will
+ * be invalidated, and a new set of selectors will be generated. This is because
+ * thread selections are fairly dynamic, and we don't want to retain too many
+ * extraneous results.
+ */
+export const getThreadSelectorsFromThreadsKey = (
+  threadsKey: ThreadsKey,
+  threadIndexes: Set<ThreadIndex> = new Set(
+    ('' + threadsKey).split(',').map((n) => +n)
+  )
+): ThreadSelectors => {
+  if (threadIndexes.size === 1) {
+    // We should get the single thread and use its caching mechanism.
+    // We know this value exists because of the size check, even if Flow doesn't.
+    return getSingleThreadSelectors(
+      ensureExists(getFirstItemFromSet(threadIndexes))
+    );
+  }
+
+  return _mergedThreadSelectorsMemoized(threadsKey);
+};
+
+function _buildThreadSelectors(
+  threadIndexes: Set<ThreadIndex>,
+  threadsKey: ThreadsKey = ProfileData.getThreadsKey(threadIndexes)
+) {
+  // We define the thread selectors in 5 steps to ensure clarity in the
+  // separate files.
+  // 1. The basic thread selectors.
+  let selectors: any = getBasicThreadSelectorsPerThread(
+    threadIndexes,
+    threadsKey
+  );
+  // 2. The marker selectors.
+  selectors = {
+    ...selectors,
+    ...getMarkerSelectorsPerThread(selectors, threadsKey),
+  };
+  // 3. The thread selectors that need marker selectors.
+  selectors = {
+    ...selectors,
+    ...getThreadSelectorsWithMarkersPerThread(selectors, threadsKey),
+  };
+  // 4. Stack, sample selectors that need the previous selectors for their
+  // own definition.
+  selectors = {
+    ...selectors,
+    ...getStackAndSampleSelectorsPerThread(selectors, threadsKey),
+  };
+  // 5. Other selectors that need selectors from different files to be defined.
+  selectors = {
+    ...selectors,
+    ...getComposedSelectorsPerThread(selectors),
+  };
+  return selectors;
+}
+
+/**
+ * Most of the time, we only want to work with the selected thread. This object
+ * collects the selectors for the currently selected thread.
+ */
+export const selectedThreadSelectors: ThreadSelectors = (() => {
+  const anyThreadSelectors: ThreadSelectors = getThreadSelectors(0);
+  const result: any = {};
+  for (const key in anyThreadSelectors) {
+    result[key] = (state: State) =>
+      (getThreadSelectors(UrlState.getSelectedThreadIndexes(state)) as any)[
+        key
+      ](state);
+  }
+  const result2: ThreadSelectors = result as any;
+  return result2;
+})();
+
+export type NodeSelectors = {
+  readonly getName: Selector<string>;
+  readonly getIsJS: Selector<boolean>;
+  readonly getLib: Selector<string>;
+  readonly getTimingsForSidebar: Selector<TimingsForPath>;
+};
+
+export const selectedNodeSelectors: NodeSelectors = (() => {
+  const getName: Selector<string> = createSelector(
+    selectedThreadSelectors.getSelectedCallNodePath,
+    selectedThreadSelectors.getFilteredThread,
+    (selectedPath, { stringTable, funcTable }) => {
+      if (!selectedPath.length) {
+        return '';
+      }
+
+      const funcIndex = ProfileData.getLeafFuncIndex(selectedPath);
+      return stringTable.getString(funcTable.name[funcIndex]);
+    }
+  );
+
+  const getIsJS: Selector<boolean> = createSelector(
+    selectedThreadSelectors.getSelectedCallNodePath,
+    selectedThreadSelectors.getFilteredThread,
+    (selectedPath, { funcTable }) => {
+      if (!selectedPath.length) {
+        return false;
+      }
+
+      const funcIndex = ProfileData.getLeafFuncIndex(selectedPath);
+      return funcTable.isJS[funcIndex];
+    }
+  );
+
+  const getLib: Selector<string> = createSelector(
+    selectedThreadSelectors.getSelectedCallNodePath,
+    selectedThreadSelectors.getFilteredThread,
+    ProfileSelectors.getSourceTable,
+    (selectedPath, { stringTable, funcTable, resourceTable }, sources) => {
+      if (!selectedPath.length) {
+        return '';
+      }
+
+      return ProfileData.getOriginAnnotationForFunc(
+        ProfileData.getLeafFuncIndex(selectedPath),
+        funcTable,
+        resourceTable,
+        stringTable,
+        sources
+      );
+    }
+  );
+
+  const getTimingsForSidebar: Selector<TimingsForPath> = createSelector(
+    selectedThreadSelectors.getSelectedCallNodePath,
+    selectedThreadSelectors.getCallNodeInfo,
+    selectedThreadSelectors.getThread,
+    selectedThreadSelectors.getPreviewFilteredCtssSampleIndexOffset,
+    ProfileSelectors.getCategories,
+    selectedThreadSelectors.getPreviewFilteredCtssSamples,
+    selectedThreadSelectors.getUnfilteredCtssSamples,
+    ProfileData.getTimingsForPath
+  );
+
+  return {
+    getName,
+    getIsJS,
+    getLib,
+    getTimingsForSidebar,
+  };
+})();

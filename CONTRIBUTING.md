@@ -50,15 +50,13 @@ module.exports = function (config, serverConfig) {
 };
 ```
 
-[Flow](https://flow.org/) is used for type checking. VSCode users can install the ["Flow Language Support" extension](https://marketplace.visualstudio.com/items?itemName=flowtype.flow-for-vscode), and disable VSCode's built-in TypeScript extension in the workspace via the [setup instructions here](https://github.com/flow/flow-for-vscode#setup).
+This project uses [TypeScript](https://www.typescriptlang.org/).
 
-## Using Gitpod
+## Using GitHub Codespaces
 
-Alternatively, you can also develop the Firefox Profiler online in a pre-configured development environment:
+Alternatively, you can also develop the Firefox Profiler online in a pre-configured development environment using [GitHub Codespaces](https://github.com/features/codespaces).
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/firefox-devtools/profiler)
-
-Gitpod will automatically install all dependencies; start the webpack server for you; and open the web app in a new browser tab. Please look at our [gitpod documentation](./docs-user/gitpod.md) for more information.
+GitHub Codespaces will automatically install all dependencies, start the webpack server for you, and forward port 4242 so you can access the web app. Please look at our [GitHub Codespaces documentation](./docs-developer/codespaces.md) for more information.
 
 ## Loading in profiles for development
 
@@ -87,13 +85,13 @@ When working on a new feature and code changes, it's important that things work 
   - `yarn test-all` - Test all the things!
   - `yarn test` - Run the tests in [`./src/test/`](./src/test/).
   - `yarn lint` - Run prettier, stylelint, and eslint to check for correct code formatting.
-  - `yarn flow` - Check the [Flow types](https://flow.org/) for correctness.
+  - `yarn ts` - Check for TypeScript type correctness.
   - `yarn license-check` - Check the dependencies' licenses.
 - `git push` and `git commit`
   - We have [husky](https://www.npmjs.com/package/husky) installed to run automated checks when committing and pushing.
   - Run git commands with `--no-verify` to skip this step. This is useful for submitting broken PRs for feedback.
 - Continuous integration for pull requests
-  - We use CircleCI to run our tests for every PR that is submitted. This gives reviewers a great way to know if things are still working as expected.
+  - We use GitHub Actions to run our tests for every PR that is submitted. This gives reviewers a great way to know if things are still working as expected.
 
 ### Updating snapshots
 

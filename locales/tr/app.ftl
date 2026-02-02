@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -30,6 +24,7 @@ AppHeader--github-icon =
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Profil içe aktarılamadı.
 AppViewRouter--error-unpublished = { -firefox-brand-name } tarayıcısından profil alınamadı.
 AppViewRouter--error-from-file = Dosya okunamadı veya içindeki profil ayrıştırılamadı.
 AppViewRouter--error-local = Henüz hazır değil.
@@ -59,10 +54,41 @@ CallNodeContextMenu--transform-merge-function = Fonksiyonu birleştir
         Bir fonksiyonun birleştirilmesi onu profilden kaldırıp
         süresini onu çağıran fonksiyona atar. Bu işlem, fonksiyonun
         ağaçta çağrıldığı her yerde gerçekleşir.
+CallNodeContextMenu--transform-merge-call-node = Yalnızca düğümü birleştir
+    .title =
+        Bir düğümü birleştirmek onu profilden kaldırır ve süresini onu çağıran
+        fonksiyonun düğümüne atar. Fonksiyonu yalnızca ağacın o belirli
+        bölümünden kaldırır. Fonksiyonun çağrıldığı diğer yerler
+        profilde kalacaktır.
+# This is used as the context menu item title for "Focus on function" and "Focus
+# on function (inverted)" transforms.
+CallNodeContextMenu--transform-focus-function-title = Bir fonksiyona odaklanmak, o fonksiyonu içermeyen örnekleri kaldıracaktır. Buna ek olarak, çağrı ağacının kökünü yeniden belirleyerek  ağacın tek kökünün fonksiyon olmasını sağlayacaktır. Bu işlem, bir profilde bulunan birçok fonksiyon çağrı alanını birleştirip tek bir çağrı düğümünde toplayabilir.
 CallNodeContextMenu--transform-focus-function = Fonksiyona odaklan
     .title = { CallNodeContextMenu--transform-focus-function-title }
 CallNodeContextMenu--transform-focus-function-inverted = Fonksiyona odaklan (tersine)
     .title = { CallNodeContextMenu--transform-focus-function-title }
+CallNodeContextMenu--transform-focus-subtree = Yalnızca alt ağaca odaklan
+    .title = Alt ağaca odaklanmak, çağrı ağacının belirtilen bölgesini içermeyen her örneği kaldıracaktır. Bu işlem, çağrı ağacının bir dalını koparır ama bunu yalnızca belirtilen çağrı düğümü için yapar. Fonksiyonun yaptığı diğer çağrılar görmezden gelinir.
+# This is used as the context menu item to apply the "Focus on category" transform.
+# Variables:
+#   $categoryName (String) - Name of the category to focus on.
+CallNodeContextMenu--transform-focus-category = <strong>{ $categoryName }</strong> kategorisine odaklan
+    .title = Seçilen düğümle aynı kategorideki düğümlere odaklanarak diğer kategorilere ait tüm düğümleri birleştirir.
+CallNodeContextMenu--transform-collapse-function-subtree = Fonksiyonu daralt
+    .title = Bir fonksiyonu daraltmak o fonksiyonun çağırdığı her şeyi kaldıracak ve bütün süreyi fonskiyona atayacaktır. Bu işlem, analiz edilmesi gerekmeyen kodlara çağrı yapan bir profilin basitleştirilmesini sağlayabilir.
+# This is used as the context menu item to apply the "Collapse resource" transform.
+# Variables:
+#   $nameForResource (String) - Name of the resource to collapse.
+CallNodeContextMenu--transform-collapse-resource = <strong>{ $nameForResource }</strong> kaynağını daralt
+    .title = Bir kaynağı daraltmak, o kaynağa yapılan bütün çağrıların tek bir çağrı düğümünde bir araya getirir.
+CallNodeContextMenu--transform-collapse-recursion = Özyinelemeyi daralt
+    .title = Özyinelemeyi daraltmak devamlı aynı fonksiyona dönen çağrıları kaldırır (yığındaki ara fonksiyonlar dahil).
+CallNodeContextMenu--transform-collapse-direct-recursion-only = Yalnızca direkt özyinelemeyi daralt
+    .title = Direkt özyinelemeyi daraltmak, devamlı aynı fonksiyona yapılan ama yığında ara fonksiyonları olmayan çağrıları kaldırır.
+CallNodeContextMenu--transform-drop-function = Bu fonksiyonu taşıyan örnekleri at
+    .title =
+        Atılan örneklerin süreleri profilden kaldırılır. Bu işlem, analizle ilgili olmayan
+        süre bilgilerini ortadan kaldırmak için kullanışlıdır.
 CallNodeContextMenu--expand-all = Tümünü genişlet
 # Searchfox is a source code indexing tool for Mozilla Firefox.
 # See: https://searchfox.org/
@@ -70,10 +96,15 @@ CallNodeContextMenu--searchfox = Fonksiyon adını Searchfox’ta ara
 CallNodeContextMenu--copy-function-name = Fonksiyon adını kopyala
 CallNodeContextMenu--copy-script-url = Betik URL’sini kopyala
 CallNodeContextMenu--copy-stack = Yığını kopyala
+CallNodeContextMenu--show-the-function-in-devtools = Fonksiyonu geliştirici araçlarında göster
 
 ## CallTree
 ## This is the component for Call Tree panel.
 
+CallTree--tracing-ms-total = Çalışma süresi (ms)
+    .title = “Toplam” çalışma süresi, bu fonksiyonun yığında gözlemlendiği tüm sürenin özetini içerir. Bu süre, fonksiyonun kendisinin çalıştığı süreyi ve bu fonksiyondan çağırılanların sürelerini içerir.
+CallTree--tracing-ms-self = Öz (ms)
+    .title = “Öz” süre yalnızca fonksiyonun yığının sonunda olduğu süreyi içerir. Eğer fonksiyon başka fonksiyonları çağırmışsa diğer fonksiyonların süresi dahil değildir. Öz süre, programda asıl nerede zaman harcandığını anlamak için faydalıdır.
 
 ## Call tree "badges" (icons) with tooltips
 ##
@@ -108,20 +139,36 @@ CallTreeSidebar--call-node-details = Çağrı düğümü ayrıntıları
 
 CallTreeSidebar--traced-running-time =
     .label = İzlenen çalışma süresi
+CallTreeSidebar--traced-self-time =
+    .label = İzlenen öz süre
 CallTreeSidebar--running-time =
     .label = Çalışma süresi
+CallTreeSidebar--self-time =
+    .label = Kendi süresi
 CallTreeSidebar--running-samples =
     .label = Çalışan örnekler
+CallTreeSidebar--self-samples =
+    .label = Kendi örnekleri
 CallTreeSidebar--running-size =
     .label = Çalışma boyutu
+CallTreeSidebar--self-size =
+    .label = Kendi boyutu
 CallTreeSidebar--categories = Kategoriler
 CallTreeSidebar--implementation = Yürütme
+CallTreeSidebar--running-milliseconds = Çalışma milisaniyesi
+CallTreeSidebar--self-milliseconds = Kendi milisaniyesi
+CallTreeSidebar--self-sample-count = Kendi örnek sayısı
+CallTreeSidebar--self-bytes = Kendi baytı
 
 ## CompareHome
 ## This is used in the page to compare two profiles.
 ## See: https://profiler.firefox.com/compare/
 
 CompareHome--instruction-title = Karşılaştırmak istediğiniz profil URL’lerini girin
+CompareHome--instruction-content =
+    Araç, her profil için seçilen yol ve aralıktan verileri çıkaracak ve
+    karşılaştırmayı kolaylaştırmak için her ikisini de aynı görünüme
+    yerleştirecektir.
 CompareHome--form-label-profile1 = Profil 1:
 CompareHome--form-label-profile2 = Profil 2:
 CompareHome--submit-button =
@@ -131,6 +178,10 @@ CompareHome--submit-button =
 ## This is displayed at the top of the analysis page when the loaded profile is
 ## a debug build of Firefox.
 
+DebugWarning--warning-message =
+    .message =
+        Bu profil, sürüm optimizasyonları yapılmamış bir derlemede kaydedildi.
+        Performans gözlemleri sürüm popülasyonu için geçerli olmayabilir.
 
 ## Details
 ## This is the bottom panel in the analysis UI. They are generic strings to be
@@ -185,21 +236,42 @@ Home--load-from-url-submit-button =
     .value = Yükle
 Home--documentation-button = Dokümantasyon
 Home--menu-button = { -profiler-brand-name } menü düğmesini etkinleştir
+Home--menu-button-instructions = Performans kaydetmeye başlamak için { -firefox-brand-name }’ta profilleyici menü düğmesini etkinleştirin, ardından profili analiz edin ve profiler.firefox.com ile paylaşın.
+Home--profile-firefox-android-instructions =
+    { -firefox-android-brand-name }’ta da profilleme yapabilirsiniz. Daha fazla bilgi almak için lütfen bu belgeye bakın:
+    <a>Doğrudan cihaz üzerinde { -firefox-android-brand-name } profilleme</a>.
 # The word WebChannel should not be translated.
 # This message can be seen on https://main--perf-html.netlify.app/ in the tooltip
 # of the "Enable Firefox Profiler menu button" button.
 Home--enable-button-unavailable =
     .title = Bu profilleyici örneği WebChannel’a bağlanamadığı için profilleyici menü düğmesini etkinleştiremez.
+# The word WebChannel, the pref name, and the string "about:config" should not be translated.
+# This message can be seen on https://main--perf-html.netlify.app/ .
+Home--web-channel-unavailable = Bu profilleyici örneği WebChannel’a bağlanamadı. Genellikle bunun sebebi, <code>devtools.performance.recording.ui-base-url</code> tercihinde belirtilenden farklı bir sunucuda çalışmasıdır. Bu örnekle yeni profiller kaydetmek ve profilleyici menü düğmesinin programatik kontrolünü bu örneğe vermek isterseniz <code>about:config</code> adresine gidip tercihinizi değiştirebilirsiniz.
+Home--record-instructions =
+    Profillemeyi başlatmak için profilleme düğmesine tıklayın veya
+    klavye kısayollarını kullanın. Profil kaydedilirken simge maviye dönüşür.
+    Verileri profiler.firefox.com’a yüklemek için <kbd>Kaydet</kbd>’e tıklayın.
 Home--instructions-content =
     Performans profilleri yalnızca <a>{ -firefox-brand-name }</a> ile kaydedilebilir.
     Ancak mevcut profiller herhangi bir modern tarayıcıda görüntülenebilir.
 Home--record-instructions-start-stop = Profillemeyi durdur ve başlat
 Home--record-instructions-capture-load = Profili yakala ve yükle
-Home--profiler-motto = Performans profili yakalayın. Analiz edin. Paylaşın. Web’i daha hızlı hale getirin.
+Home--profiler-motto = Performans profili kaydedin. Analiz edin. Paylaşın. Web’i daha hızlı hale getirin.
 Home--additional-content-title = Mevcut profilleri yükleyin
 Home--additional-content-content = Profil dosyasını buraya <strong>sürükleyip bırakarak</strong> yükleyebilirsiniz ya da:
 Home--compare-recordings-info = Ayrıca kayıtları karşılaştırabilirsiniz. <a>Karşılaştırma arayüzünü aç.</a>
 Home--your-recent-uploaded-recordings-title = Son yüklediğiniz kayıtlar
+Home--dark-mode-title = Koyu mod
+# We replace the elements such as <perf> and <simpleperf> with links to the
+# documentation to use these tools.
+Home--load-files-from-other-tools2 = { -profiler-brand-name } ayrıca <perf>Linux perf</perf>, <simpleperf>Android SimplePerf</simpleperf>, Chrome performans paneli, <androidstudio>Android Studio</androidstudio> gibi diğer profilleyicilerden ve <dhat>dhat biçimini</dhat> veya <traceevent>Google’ın trace etkinliği biçimini</traceevent> kullanan herhangi bir dosyadan profilleri içe aktarabilir. <write>Kendi içe aktarıcınızı yazmayı öğrenin.</write>
+Home--install-chrome-extension = Chrome uzantısını yükle
+Home--chrome-extension-instructions = Chrome’daki performans profillerini kaydedip { -profiler-brand-name }’da analiz etmek için <a>Chrome { -profiler-brand-name } uzantısını</a> kullanabilirsiniz. Uzantıyı Chrome Web Store'dan yükleyebilirsiniz.
+Home--chrome-extension-recording-instructions =
+    Uzantıyı yükledikten sonra profillemeyi başlatmak ve durdurmak için uzantının
+    araç çubuğu simgesini veya kısayolları kullanabilirsiniz. İsterseniz
+    profilleri dışa aktarabilir ve ayrıntılı analiz için buraya yükleyebilirsiniz.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
@@ -210,6 +282,8 @@ IdleSearchField--search-input =
 ## JsTracerSettings
 ## JSTracer is an experimental feature and it's currently disabled. See Bug 1565788.
 
+JsTracerSettings--show-only-self-time = Yalnızca öz süreyi göster
+    .title = Yalnızca çağrı düğümünde harcanan zamanı göster, alt düğümleri göz ardı et.
 
 ## ListOfPublishedProfiles
 ## This is the component that displays all the profiles the user has uploaded.
@@ -262,10 +336,12 @@ MarkerContextMenu--select-the-receiver-thread = “<strong>{ $threadName }</stro
 #   $threadName (String) - Name of the thread that will be selected.
 MarkerContextMenu--select-the-sender-thread = “<strong>{ $threadName }</strong>” gönderen iş parçacığını seç
 
-## MarkerFiltersContextMenu
-## This is the menu when filter icon is clicked in Marker Chart and Marker Table
-## panels.
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
 
+MarkerCopyTableContextMenu--copy-table-as-plain = İşaretçi tablosunu düz metin olarak kopyala
+MarkerCopyTableContextMenu--copy-table-as-markdown = İşaretçi tablosunu Markdown olarak kopyala
 
 ## MarkerSettings
 ## This is used in all panels related to markers.
@@ -275,6 +351,8 @@ MarkerSettings--panel-search =
     .title = Yalnızca belirli bir adla eşleşen işaretçileri görüntüler
 MarkerSettings--marker-filters =
     .title = İşaretçi filtreleri
+MarkerSettings--copy-table =
+    .title = Tabloyu metin olarak kopyala
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -288,6 +366,16 @@ MarkerTable--start = Başlangıç
 MarkerTable--duration = Süre
 MarkerTable--name = Ad
 MarkerTable--details = Ayrıntılar
+
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .title = Yalnızca şununla eşleşen işaretleri göster: “{ $filter }”
+    .aria-label = Yalnızca şununla eşleşen işaretleri göster: “{ $filter }”
 
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
@@ -315,6 +403,11 @@ MenuButtons--index--profile-info-uploaded-label = Yüklenme tarihi:
 MenuButtons--index--profile-info-uploaded-actions = Sil
 MenuButtons--index--metaInfo-subtitle = Profil Bilgileri
 MenuButtons--metaInfo--symbols = Semboller:
+MenuButtons--metaInfo--profile-symbolicated = Profil sembolleştirilmiştir
+MenuButtons--metaInfo--profile-not-symbolicated = Profil sembolleştirilmemiş
+MenuButtons--metaInfo--resymbolicate-profile = Profili yeniden sembolleştir
+MenuButtons--metaInfo--symbolicate-profile = Profili sembolleştir
+MenuButtons--metaInfo--attempting-resymbolicate = Profil yeniden sembolleştirilmeye çalışılıyor
 MenuButtons--metaInfo--cpu-model = İşlemci modeli:
 MenuButtons--metaInfo--cpu-cores = İşlemci çekirdekleri:
 MenuButtons--metaInfo--main-memory = Ana bellek:
@@ -359,6 +452,8 @@ MenuButtons--metaInfo--profiling-started = Kayıt başlama tarihi:
 MenuButtons--metaInfo--profiling-session = Kaydın uzunluğu:
 MenuButtons--metaInfo--main-process-started = Ana işlemin başlama tarihi:
 MenuButtons--metaInfo--main-process-ended = Ana işlemin bitiş tarihi:
+MenuButtons--metaInfo--file-name = Dosya adı:
+MenuButtons--metaInfo--file-size = Dosya boyutu:
 MenuButtons--metaInfo--interval = Aralık:
 MenuButtons--metaInfo--buffer-capacity = Tampon kapasitesi:
 MenuButtons--metaInfo--buffer-duration = Tampon süresi:
@@ -412,10 +507,14 @@ MenuButtons--metaOverheadStatistics-max = Maksimum
 MenuButtons--metaOverheadStatistics-min = Minimum
 MenuButtons--metaOverheadStatistics-statkeys-overhead = Ek yük
     .title = Tüm iş parçacıklarını örnekleme süresi.
+MenuButtons--metaOverheadStatistics-statkeys-cleaning = Temizleme
+    .title = Süresi geçmiş verileri temizleme süresi.
 MenuButtons--metaOverheadStatistics-statkeys-counter = Sayaç
     .title = Tüm sayaçları toplama süresi.
 MenuButtons--metaOverheadStatistics-statkeys-interval = Aralık
     .title = İki örnek arasındaki gözlenen aralık.
+MenuButtons--metaOverheadStatistics-statkeys-lockings = Kilitlemeler
+    .title = Örneklemeden önce kilidi elde etme süresi.
 MenuButtons--metaOverheadStatistics-overhead-duration = Ek yük süreleri:
 MenuButtons--metaOverheadStatistics-overhead-percentage = Ek yük yüzdesi:
 MenuButtons--metaOverheadStatistics-profiled-duration = Profillenen süre:
@@ -474,6 +573,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 
 PanelSearch--search-field-hint = Birden fazla terim kullanarak arama yapmak için virgül (,) kullanabileceğinizi biliyor muydunuz?
 
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = Profil adını düzenle
+ProfileName--edit-profile-name-input =
+    .title = Profil adını düzenle
+    .aria-label = Profil adı
+
 ## Profile Delete Button
 
 # This string is used on the tooltip of the published profile links delete button in uploaded recordings page.
@@ -521,6 +628,7 @@ ProfileFilterNavigator--full-range-with-duration = Tam aralık ({ $fullRangeDura
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Profil içe aktarılıyor ve işleniyor…
 ProfileLoaderAnimation--loading-unpublished = Profil doğrudan { -firefox-brand-name } tarayıcısından içe aktarılıyor…
 ProfileLoaderAnimation--loading-from-file = Dosya okunuyor ve profil işleniyor…
 ProfileLoaderAnimation--loading-local = Henüz hazır değil.
@@ -560,12 +668,15 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = Tüm çerçeveler
     .title = Yığın çerçevelerini filtreleme
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Yalnızca JavaScript yürütmesiyle ilgili yığın çerçevelerini göster
+StackSettings--implementation-script = Betik
+    .title = Yalnızca script çalışmasına ilişkin yığın çerçevelerini göster
+StackSettings--implementation-native2 = Yerel
+    .title = Yalnızca yerel kod için yığın çerçevelerini göster
 # This label is displayed in the marker chart and marker table panels only.
 StackSettings--stack-implementation-label = Yığın filtresi:
 StackSettings--use-data-source-label = Veri kaynağı:
 StackSettings--show-user-timing = Kullanıcı zamanlamasını göster
+StackSettings--use-stack-chart-same-widths = Her yığın için aynı genişliği kullan
 StackSettings--panel-search =
     .label = Yığınları filtrele:
     .title = Yalnızca adı bu alt dizgiyle eşleşen bir fonksiyon içeren yığınları görüntüler
@@ -603,6 +714,10 @@ TrackContextMenu--hide-other-screenshots-tracks = Diğer ekran görüntüsü yol
 TrackContextMenu--hide-track = “{ $trackName }” yolunu gizle
 TrackContextMenu--show-all-tracks = Tüm yolları göster
 TrackContextMenu--show-local-tracks-in-process = Bu işlemdeki tüm yolları göster
+# This is used as the context menu item to hide all tracks of the selected track's type.
+# Variables:
+#   $type (String) - Name of the type of selected track to hide.
+TrackContextMenu--hide-all-tracks-by-selected-track-type = “{ $type }” türündeki tüm yolları gizle
 # This is used in the tracks context menu as a button to show all the tracks
 # that match the search filter.
 TrackContextMenu--show-all-matching-tracks = Eşleşen tüm yolları göster
@@ -626,7 +741,9 @@ TrackNameButton--hide-process =
 ## the UI. To learn more about it, visit:
 ## https://profiler.firefox.com/docs/#/./memory-allocations?id=memory-track
 
+TrackMemoryGraph--relative-memory-at-this-time = bu süredeki göreli bellek
 TrackMemoryGraph--memory-range-in-graph = grafikteki bellek aralığı
+TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample = önceki örnekten beri yapılan atamalar ve serbest bırakmalar
 
 ## TrackPower
 ## This is used to show the power used by the CPU and other chips in a computer,
@@ -807,11 +924,21 @@ TransformNavigator--focus-function = Odak: { $item }
 # Variables:
 #   $item (String) - Name of the category that transform applied to.
 TransformNavigator--focus-category = Odak kategorisi: { $item }
+# "Merge call node" transform.
+# See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=merge
+# Variables:
+#   $item (String) - Name of the function that transform applied to.
+TransformNavigator--merge-call-node = Düğümü birleştir: { $item }
 # "Merge function" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=merge
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
 TransformNavigator--merge-function = Birleştir: { $item }
+# "Drop function" transform.
+# See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=drop
+# Variables:
+#   $item (String) - Name of the function that transform applied to.
+TransformNavigator--drop-function = Bırak: { $item }
 # "Collapse recursion" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=collapse
 # Variables:
@@ -875,6 +1002,33 @@ SourceView--no-known-cors-url = Bu dosya için bilinen çapraz kökenli erişile
 #   $url (String) - The URL which we tried to get the source code from
 #   $networkErrorMessage (String) - The raw internal error message that was encountered by the network request, not localized
 SourceView--network-error-when-obtaining-source = { $url } adresi getirilirken bir ağ hatası oluştu: { $networkErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if the browser could not
+# be queried for source code using the symbolication API.
+# Variables:
+#   $browserConnectionErrorMessage (String) - The raw internal error message, not localized
+SourceView--browser-connection-error-when-obtaining-source = Tarayıcının sembolikleştirme API’si sorgulanamadı: { $browserConnectionErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if the browser was queried
+# for source code using the symbolication API, and this query returned an error.
+# Variables:
+#   $apiErrorMessage (String) - The raw internal error message from the API, not localized
+SourceView--browser-api-error-when-obtaining-source = Tarayıcının sembolikleştirme API’si hata döndürdü: { $apiErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a symbol server which is
+# running locally was queried for source code using the symbolication API, and
+# this query returned an error.
+# Variables:
+#   $apiErrorMessage (String) - The raw internal error message from the API, not localized
+SourceView--local-symbol-server-api-error-when-obtaining-source = Yerel sembol sunucusunun sembolikleştirme API’si hata döndürdü: { $apiErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if the browser was queried
+# for source code using the symbolication API, and this query returned a malformed response.
+# Variables:
+#   $apiErrorMessage (String) - The raw internal error message from the API, not localized
+SourceView--browser-api-malformed-response-when-obtaining-source = Tarayıcının sembolikleştirme API’si hasarlı bir yanıt döndürdü: { $apiErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a symbol server which is
+# running locally was queried for source code using the symbolication API, and
+# this query returned a malformed response.
+# Variables:
+#   $apiErrorMessage (String) - The raw internal error message from the API, not localized
+SourceView--local-symbol-server-api-malformed-response-when-obtaining-source = Yerel sembol sunucusunun sembolikleştirme API’si hasarlı bir yanıt döndürdü: { $apiErrorMessage }
 # Displayed below SourceView--cannot-obtain-source, if a file could not be found in
 # an archive file (.tar.gz) which was downloaded from crates.io.
 # Variables:

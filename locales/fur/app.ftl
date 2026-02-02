@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -30,6 +24,7 @@ AppHeader--github-icon =
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Impussibil impuartâ il profîl.
 AppViewRouter--error-unpublished = Impussibil recuperâ il profîl di { -firefox-brand-name }.
 AppViewRouter--error-from-file = Impussibil lei il file o analizâ il profîl che al à dentri.
 AppViewRouter--error-local = No ancjemò implementât.
@@ -46,6 +41,14 @@ AppViewRouter--error-from-localhost-url-safari =
     .title = Safari nol rive a impuartâ i profîi locâi
 AppViewRouter--route-not-found--home =
     .specialMessage = L’URL che tu âs cirût di contatâ nol è stât ricognossût.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (incorporade)
+    .title = Il compiladôr al veve incorporade la funzion { $function } in chel che le clamave.
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -116,6 +119,7 @@ CallNodeContextMenu--searchfox = Cîr il non de funzion in Searchfox
 CallNodeContextMenu--copy-function-name = Copie non de funzion
 CallNodeContextMenu--copy-script-url = Copie URL dal script
 CallNodeContextMenu--copy-stack = Copie stack
+CallNodeContextMenu--show-the-function-in-devtools = Mostre la funzion in struments di svilup
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -310,6 +314,11 @@ Home--your-recent-uploaded-recordings-title = Lis tôs regjistrazions cjariadis 
 Home--load-files-from-other-tools2 =
     { -profiler-brand-name } al pues ancje impuartâ profîi di altris profiladôrs, come <perf>Linux perf</perf>, <simpleperf>Android SimplePerf</simpleperf>, il
     panel prestazions di Chrome, <androidstudio>Android Studio</androidstudio> o qualsisei file che al dopri il <dhat>formât dhat</dhat> o <traceevent>Trace Event di Google</traceevent>. <write>Scuvierç cemût creâ un strument di importazion</write>.
+Home--install-chrome-extension = Instale la estensions par Chrome
+Home--chrome-extension-instructions =
+    Dopre la estension <a>{ -profiler-brand-name } par Chrome</a>
+    par tirâ dongje i profîi des prestazions in Chrome e analizâju in { -profiler-brand-name }. Instale la estension dal Chrome Web Store.
+Home--chrome-extension-recording-instructions = Une volte instalade, dopre la icone de estension te sbare dai struments o lis scurtis par inviâe interompi la profilazion. Tu puedis ancje espuartâ i profîi e cjariâju achì par fâ une analisi detaiade.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
@@ -406,6 +415,16 @@ MarkerTable--duration = Durade
 MarkerTable--name = Non
 MarkerTable--details = Detais
 
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .title = Mostre nome i marcadôrs che a corispuindin a: “{ $filter }”
+    .aria-label = Mostre nome i marcadôrs che a corispuindin a: “{ $filter }”
+
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
 
@@ -482,6 +501,8 @@ MenuButtons--metaInfo--profiling-started = Regjistrazion scomençade:
 MenuButtons--metaInfo--profiling-session = Lungjece regjistrazion:
 MenuButtons--metaInfo--main-process-started = Procès principâl inviât:
 MenuButtons--metaInfo--main-process-ended = Procès principâl completât:
+MenuButtons--metaInfo--file-name = Non dal file:
+MenuButtons--metaInfo--file-size = Dimension dal file:
 MenuButtons--metaInfo--interval = Interval:
 MenuButtons--metaInfo--buffer-capacity = Capacitât buffer:
 MenuButtons--metaInfo--buffer-duration = Durade buffer:
@@ -601,6 +622,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 
 PanelSearch--search-field-hint = Savevistu che tu puedis doprâ la virgule (,) par fâ ricercjis cun plui tiermins?
 
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = Modifiche il non dal profîl
+ProfileName--edit-profile-name-input =
+    .title = Modifiche il non dal profîl
+    .aria-label = Non dal profîl
+
 ## Profile Delete Button
 
 # This string is used on the tooltip of the published profile links delete button in uploaded recordings page.
@@ -646,6 +675,7 @@ ProfileFilterNavigator--full-range-with-duration = Interval complet ({ $fullRang
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Daûr a impuartâ e a elaborâ il profîl…
 ProfileLoaderAnimation--loading-unpublished = Importazion dal profîl dret di { -firefox-brand-name }…
 ProfileLoaderAnimation--loading-from-file = Leture dal file e analisi dal profîl…
 ProfileLoaderAnimation--loading-local = No ancjemò implementât.
@@ -683,8 +713,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = Ducj i ricuadris
     .title = No sta filtrâ i ricuadris dal stack
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Mostre dome i ricuadris dal stack corelâts ae esecuzion di JavaScript
+StackSettings--implementation-script = Script
+    .title = Mostre dome lis istantaniis dal stack relativis ae esecuzion dal script
 StackSettings--implementation-native2 = Natîf
     .title = Mostre dome i ricuadris dal stack pal codiç natîf
 # This label is displayed in the marker chart and marker table panels only.
@@ -705,6 +735,7 @@ StackSettings--call-tree-strategy-native-deallocations-sites = Sîts disassegnâ
 StackSettings--invert-call-stack = Invertìs stack di clamade
     .title = Ordene in base al timp doprât intun grop di clamade, ignorant i fîs.
 StackSettings--show-user-timing = Mostre timp utent
+StackSettings--use-stack-chart-same-widths = Dopre la stesse largjece par ogni stack
 StackSettings--panel-search =
     .label = Filtre stacks:
     .title = Visualize dome i stacks che a contegnin une funzion là che il so non al corispuint a cheste sotstringhe
@@ -718,6 +749,13 @@ TabBar--marker-chart-tab = Grafic a marcadôrs
 TabBar--marker-table-tab = Tabele marcadôrs
 TabBar--network-tab = Rêt
 TabBar--js-tracer-tab = Tracer JS
+
+## TabSelectorMenu
+## This component is a context menu that's opened when you click on the root
+## range at the top left corner for profiler analysis view. It's used to switch
+## between tabs that were captured in the profile.
+
+TabSelectorMenu--all-tabs-and-windows = Dutis lis schedis e i barcons
 
 ## TrackContextMenu
 ## This is used as a context menu for timeline to organize the tracks in the
@@ -735,6 +773,10 @@ TrackContextMenu--hide-other-screenshots-tracks = Plate altris liniis Videadis.
 TrackContextMenu--hide-track = Plate “{ $trackName }”
 TrackContextMenu--show-all-tracks = Mostre dutis lis liniis
 TrackContextMenu--show-local-tracks-in-process = Mostre dutis lis liniis in chest procès
+# This is used as the context menu item to hide all tracks of the selected track's type.
+# Variables:
+#   $type (String) - Name of the type of selected track to hide.
+TrackContextMenu--hide-all-tracks-by-selected-track-type = Plate dutis lis liniis di gjenar “{ $type }”
 # This is used in the tracks context menu as a button to show all the tracks
 # that match the search filter.
 TrackContextMenu--show-all-matching-tracks = Mostre dutis lis liniis corispondentis
@@ -1063,6 +1105,13 @@ SourceView--not-in-archive-error-when-obtaining-source = Il file { $pathInArchiv
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = Impussibil analizâ l’archivi in { $url }: { $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = Il navigadôr nol è rivât a otignî il file sorzint par { $url } cun sourceUuid { $sourceUuid }: { $errorMessage }.
 
 ## Toggle buttons in the top right corner of the bottom box
 

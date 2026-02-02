@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -30,6 +24,7 @@ AppHeader--github-icon =
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = 无法导入分析记录。
 AppViewRouter--error-unpublished = 无法从 { -firefox-brand-name } 检索到分析记录。
 AppViewRouter--error-from-file = 无法读取或解析其中的分析记录。
 AppViewRouter--error-local = 尚未实现。
@@ -43,6 +38,14 @@ AppViewRouter--error-from-localhost-url-safari = 由于 <a>Safari 浏览器的�
     .title = Safari 浏览器无法导入本地性能分析记录
 AppViewRouter--route-not-found--home =
     .specialMessage = 无法识别您尝试访问的 URL。
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = （已内联）
+    .title = 编译器已将 { $function } 内联至其调用方。
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -89,6 +92,7 @@ CallNodeContextMenu--searchfox = 用 Searchfox 搜索函数名称
 CallNodeContextMenu--copy-function-name = 复制函数名称
 CallNodeContextMenu--copy-script-url = 复制脚本 URL
 CallNodeContextMenu--copy-stack = 复制栈
+CallNodeContextMenu--show-the-function-in-devtools = 在开发者工具中显示函数
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -261,6 +265,9 @@ Home--your-recent-uploaded-recordings-title = 您最近上传的记录
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 = { -profiler-brand-name } 也可以从其他分析器导入记录，例如 <perf>Linux perf</perf>、<simpleperf>Android SimplePerf</simpleperf>、Chrome 性能面板、<androidstudio>Android Studio</androidstudio>，支持直接导入 <dhat>dhat</dhat>、<traceevent>Google 的 Trace Event</traceevent> 格式保存的分析记录。<write>点此了解如何编写您自己的导入程序</write>。
+Home--install-chrome-extension = 安装 Chrome 扩展
+Home--chrome-extension-instructions = 使用 <a>Chrome 版 { -profiler-brand-name } 扩展</a>，在 Chrome 中捕捉性能分析记录，并通过 { -profiler-brand-name } 分析。可到 Chrome 应用商店安装扩展。
+Home--chrome-extension-recording-instructions = 安装后，即可使用扩展的工具栏图标和快捷键来开始或停止分析，也可以导出分析记录并在此处加载以进行详细分析。
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
@@ -333,7 +340,14 @@ MarkerContextMenu--select-the-sender-thread = 选择 Sender 线程“<strong>{ $
 # This string is used on the marker filters menu item when clicked on the filter icon.
 # Variables:
 #   $filter (String) - Search string that will be used to filter the markers.
-MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = 不用标记过滤器“<strong>{ $filter }</strong>”标记此样本
+MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = 丢弃与标记（匹配条件：“<strong>{ $filter }</strong>”）不相关的样本
+
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = 以纯文本格式复制标记表格
+MarkerCopyTableContextMenu--copy-table-as-markdown = 以 Markdown 格式复制标记表格
 
 ## MarkerSettings
 ## This is used in all panels related to markers.
@@ -343,6 +357,14 @@ MarkerSettings--panel-search =
     .title = 只显示匹配特定名称的标记
 MarkerSettings--marker-filters =
     .title = 标记过滤器
+MarkerSettings--copy-table =
+    .title = 以文本格式复制表格
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = 行数超出限制：{ $rows } > { $maxRows }，将仅复制前 { $maxRows } 行。
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -356,6 +378,16 @@ MarkerTable--start = 开始
 MarkerTable--duration = 持续时间
 MarkerTable--name = 名称
 MarkerTable--details = 详情
+
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .title = 仅显示匹配“{ $filter }”的标记
+    .aria-label = 仅显示匹配“{ $filter }”的标记
 
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
@@ -400,9 +432,10 @@ MenuButtons--index--hide-moreInfo-button = 显示更少
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-       *[other] 物理核心 × { $physicalCPUs }
-    }、{ $logicalCPUs ->
-       *[other] 逻辑核心 × { $logicalCPUs }
+       *[other]
+            { $logicalCPUs ->
+               *[other] 物理核心 × { $physicalCPUs }、逻辑核心 × { $logicalCPUs }
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -424,6 +457,8 @@ MenuButtons--metaInfo--profiling-started = 记录开始于：
 MenuButtons--metaInfo--profiling-session = 记录长度：
 MenuButtons--metaInfo--main-process-started = 主进程开始：
 MenuButtons--metaInfo--main-process-ended = 主进程结束：
+MenuButtons--metaInfo--file-name = 文件名：
+MenuButtons--metaInfo--file-size = 文件大小：
 MenuButtons--metaInfo--interval = 间隔：
 MenuButtons--metaInfo--buffer-capacity = 缓冲容量：
 MenuButtons--metaInfo--buffer-duration = 缓冲间隔：
@@ -542,6 +577,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 
 PanelSearch--search-field-hint = 您知道可以使用半角逗号（,）搜索多个词条吗？
 
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = 编辑分析记录名
+ProfileName--edit-profile-name-input =
+    .title = 编辑分析记录名
+    .aria-label = 分析记录名
+
 ## Profile Delete Button
 
 # This string is used on the tooltip of the published profile links delete button in uploaded recordings page.
@@ -587,6 +630,7 @@ ProfileFilterNavigator--full-range-with-duration = 完整范围（{ $fullRangeDu
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = 正在导入并处理分析记录…
 ProfileLoaderAnimation--loading-unpublished = 正在直接从 { -firefox-brand-name } 导入分析记录…
 ProfileLoaderAnimation--loading-from-file = 正在读取文件并处理分析记录…
 ProfileLoaderAnimation--loading-local = 尚未实现。
@@ -627,8 +671,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = 所有帧
     .title = 不过滤栈上的帧
-StackSettings--implementation-javascript2 = JavaScript
-    .title = 仅显示栈上需要执行的 JavaScript 帧
+StackSettings--implementation-script = 脚本
+    .title = 只显示与执行脚本相关的栈帧
 StackSettings--implementation-native2 = 原生
     .title = 仅显示栈上的原生代码帧
 # This label is displayed in the marker chart and marker table panels only.
@@ -649,6 +693,7 @@ StackSettings--call-tree-strategy-native-deallocations-sites = 释放的位置
 StackSettings--invert-call-stack = 反转调用栈
     .title = 按照调用节点中所用时间排序，并忽略其 children。
 StackSettings--show-user-timing = 显示用户计时
+StackSettings--use-stack-chart-same-widths = 所有栈使用相同宽度显示
 StackSettings--panel-search =
     .label = 过滤栈：
     .title = 只显示包含匹配的子字符串的函数名称的相关栈
@@ -929,7 +974,7 @@ TransformNavigator--collapse-function-subtree = 折叠子树：{ $item }
 # "Drop samples outside of markers matching ..." transform.
 # Variables:
 #   $item (String) - Search filter of the markers that transform will apply to.
-TransformNavigator--drop-samples-outside-of-markers-matching = 不用过滤器 “{ $item }” 标记该样本
+TransformNavigator--drop-samples-outside-of-markers-matching = 丢弃与标记（匹配条件：“{ $item }”）不相关的样本
 
 ## "Bottom box" - a view which contains the source view and the assembly view,
 ## at the bottom of the profiler UI
@@ -1018,6 +1063,13 @@ SourceView--not-in-archive-error-when-obtaining-source = { $url } 处的存档�
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = 无法解析 { $url } 处的存档：{ $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = 浏览器无法获取位置为 { $url }、sourceUuid 为 { $sourceUuid } 的源代码文件：{ $errorMessage }。
 
 ## Toggle buttons in the top right corner of the bottom box
 

@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -30,6 +24,7 @@ AppHeader--github-icon =
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Koe it profyl net ymportearje.
 AppViewRouter--error-unpublished = Kin it profyl net ophelje fan { -firefox-brand-name }.
 AppViewRouter--error-from-file = Kin it bestân net lêze of it profyl deryn ûntlede.
 AppViewRouter--error-local = Noch net ymplemintearre.
@@ -46,6 +41,14 @@ AppViewRouter--error-from-localhost-url-safari =
     .title = Safari kan geen lokale profielen importeren
 AppViewRouter--route-not-found--home =
     .specialMessage = De URL dy’t jo probearre te berikken, waard net werkend.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (inline pleatst)
+    .title = { $function } is troch de compiler inline yn de oanropomjouwing pleatst
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -120,6 +123,7 @@ CallNodeContextMenu--searchfox = De funksjenamme op Searchfox opsykje
 CallNodeContextMenu--copy-function-name = Funksjenamme kopiearje
 CallNodeContextMenu--copy-script-url = Script-URL kopiearje
 CallNodeContextMenu--copy-stack = Stack kopiearje
+CallNodeContextMenu--show-the-function-in-devtools = Funksje toane yn DevTools
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -333,6 +337,7 @@ Home--additional-content-title = Besteande profilen lade
 Home--additional-content-content = Jo kinne in profylbestân hjirhinne <strong>fersleepje</strong> om it te laden, of:
 Home--compare-recordings-info = Jo kinne ek opnamen fergelykje. <a>De fergelikingsinterface iepenje.</a>
 Home--your-recent-uploaded-recordings-title = Jo resint opladen opnamen
+Home--dark-mode-title = Donkere modus
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
@@ -342,6 +347,15 @@ Home--load-files-from-other-tools2 =
     elk bestân mei it <dhat>dhat-formaat</dhat> of de <traceevent>Trace Event-yndieling
     fan Google</traceevent> brûkt. <write>Lês hoe’t jo jo
     eigen ymportearder skriuwe</write>.
+Home--install-chrome-extension = De Chrome-útwreiding ynstallearje
+Home--chrome-extension-instructions =
+    Brûk de <a>{ -profiler-brand-name }-útwreiding foar Chrome</a>
+    om prestaasjeprofilen yn Chrome fêst te lizzen en se yn de
+    { -profiler-brand-name } te analysearjen. Ynstallearje de útwreiding fan de Chrome Web Store út.
+Home--chrome-extension-recording-instructions =
+    Brûk nei ynstallaasje it arkbalkepiktogram fan de
+    útwreiding of de fluchkeppelingen om it profilearjen te starten en te stopjen. Jo kinne ek
+    profilen eksportearje en dizze hjir lade foar detaillearre analyze.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
@@ -416,6 +430,13 @@ MarkerContextMenu--select-the-sender-thread = Selektearje de ôfstjoerderthread 
 #   $filter (String) - Search string that will be used to filter the markers.
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = Samples bûten markearringen oerienkommend mei ‘<strong>{ $filter }</strong>’ bûten beskôging litte
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = Markearringstabel as platte tekst kopiearje
+MarkerCopyTableContextMenu--copy-table-as-markdown = Markearringstabel as Markdown kopiearje
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
@@ -424,6 +445,14 @@ MarkerSettings--panel-search =
     .title = Allinnich markearringen toane dy’t oerienkommen mei in bepaalde namme
 MarkerSettings--marker-filters =
     .title = Markearringsfilters
+MarkerSettings--copy-table =
+    .title = Tabel as tekst kopiearje
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = It oantal rigen giet oer de limyt: { $rows } > { $maxRows }. Allinnich de earste { $maxRows } rigen wurde kopiearre.
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -437,6 +466,16 @@ MarkerTable--start = Start
 MarkerTable--duration = Doer
 MarkerTable--name = Namme
 MarkerTable--details = Details
+
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .title = Allinnich markearringen toane dy’t oerienkomme mei: ‘{ $filter }’
+    .aria-label = Allinnich markearringen toane dy’t oerienkomme mei: ‘{ $filter }’
 
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
@@ -481,11 +520,16 @@ MenuButtons--index--hide-moreInfo-button = Minder toane
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-        [one] { $physicalCPUs } fysike kearn,
-       *[other] { $physicalCPUs } fysike kearnen,
-    }{ $logicalCPUs ->
-        [one] { $logicalCPUs } logyske kearn
-       *[other] { $logicalCPUs } logyske kearnen
+        [one]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } fysike kearn,{ $logicalCPUs } logyske kearn
+               *[other] { $physicalCPUs } fysike kearn,{ $logicalCPUs } logyske kearnen
+            }
+       *[other]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } fysike kearnen,{ $logicalCPUs } logyske kearn
+               *[other] { $physicalCPUs } fysike kearnen,{ $logicalCPUs } logyske kearnen
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -509,6 +553,8 @@ MenuButtons--metaInfo--profiling-started = Opname start:
 MenuButtons--metaInfo--profiling-session = Opnamedoer:
 MenuButtons--metaInfo--main-process-started = Haadproses start:
 MenuButtons--metaInfo--main-process-ended = Haadproses stoppe:
+MenuButtons--metaInfo--file-name = Bestânsnamme:
+MenuButtons--metaInfo--file-size = Bestânsgrutte:
 MenuButtons--metaInfo--interval = Ynterfal:
 MenuButtons--metaInfo--buffer-capacity = Bufferkapasiteit:
 MenuButtons--metaInfo--buffer-duration = Bufferdoer:
@@ -628,6 +674,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 
 PanelSearch--search-field-hint = Wisten jo dat jo de komma (,) brûke kinne om mei ferskate termen te sykjen?
 
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = De profylnamme bewurkje
+ProfileName--edit-profile-name-input =
+    .title = De profylnamme bewurkje
+    .aria-label = Profylnamme
+
 ## Profile Delete Button
 
 # This string is used on the tooltip of the published profile links delete button in uploaded recordings page.
@@ -675,6 +729,7 @@ ProfileFilterNavigator--full-range-with-duration = Folslein berik ({ $fullRangeD
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Profyl ymportearje en ferwurkje…
 ProfileLoaderAnimation--loading-unpublished = Profyl streekrjocht fan { -firefox-brand-name } út ymportearje…
 ProfileLoaderAnimation--loading-from-file = It bestân lêze en it profyl ferwurkje…
 ProfileLoaderAnimation--loading-local = Noch net ymplemintearre.
@@ -714,8 +769,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = Alle frames
     .title = De stackframes net filterje
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Allinnich de stackframes relatearre oan útfiering fan JavaScript toane
+StackSettings--implementation-script = Script
+    .title = Allinnich de stackframes relatearre oan scriptútfiering toane
 StackSettings--implementation-native2 = Ynboud
     .title = Allinnich de stackframes foar ynboude koade toane
 # This label is displayed in the marker chart and marker table panels only.
@@ -736,6 +791,7 @@ StackSettings--call-tree-strategy-native-deallocations-sites = De-allokaasje fan
 StackSettings--invert-call-stack = Oanropstack omkeare
     .title = Sortearje op de tiid dy’t yn in oanropnode bestege wurdt, wêrby ûnderlizzende nodes negearre wurde
 StackSettings--show-user-timing = Brûkerstiming toane
+StackSettings--use-stack-chart-same-widths = Foar elke stack deselde breedte brûke
 StackSettings--panel-search =
     .label = Stacks filterje:
     .title = Allinnich stacks toane dy’t in funksje befetsje wêrfan de namme oerienkomt mei dizze substring
@@ -1105,6 +1161,13 @@ SourceView--not-in-archive-error-when-obtaining-source = It bestân { $pathInArc
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = It argyf op { $url } koe net ferwurke wurde: { $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = De browser koe it boarnebestân foar { $url } mei sourceUuid { $sourceUuid } net krije: { $errorMessage }.
 
 ## Toggle buttons in the top right corner of the bottom box
 
@@ -1116,6 +1179,17 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = De gearstallingswerjefte ferstopje
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = Foarige
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = Folgjende
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = { $current } fan { $total }
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.

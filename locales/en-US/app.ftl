@@ -27,6 +27,7 @@ AppHeader--github-icon =
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Could not import the profile.
 AppViewRouter--error-unpublished = Couldn’t retrieve the profile from { -firefox-brand-name }.
 AppViewRouter--error-from-file = Couldn’t read the file or parse the profile in it.
 AppViewRouter--error-local = Not implemented yet.
@@ -45,6 +46,14 @@ AppViewRouter--error-from-localhost-url-safari =
 
 AppViewRouter--route-not-found--home =
     .specialMessage = The URL you tried to reach was not recognized.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (inlined)
+    .title = { $function } was inlined into its caller by the compiler.
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -77,6 +86,21 @@ CallNodeContextMenu--transform-focus-function = Focus on function
     .title = { CallNodeContextMenu--transform-focus-function-title }
 CallNodeContextMenu--transform-focus-function-inverted = Focus on function (inverted)
     .title = { CallNodeContextMenu--transform-focus-function-title }
+
+## The translation for "self" in these strings should match the translation used
+## in CallTree--samples-self and CallTree--bytes-self. Alternatively it can be
+## translated as "self values" or "self time" (though "self time" is less desirable
+## because this menu item is also shown in "bytes" mode).
+
+CallNodeContextMenu--transform-focus-self-title =
+    Focusing on self is similar to focusing on a function, but only keeps samples
+    that contribute to the function’s self time. Samples in callees
+    are dropped, and the call tree is re-rooted to the focused function.
+CallNodeContextMenu--transform-focus-self = Focus on self only
+    .title = { CallNodeContextMenu--transform-focus-self-title }
+
+##
+
 CallNodeContextMenu--transform-focus-subtree = Focus on subtree only
     .title =
         Focusing on a subtree will remove any sample that does not include that
@@ -126,6 +150,7 @@ CallNodeContextMenu--searchfox = Look up the function name on Searchfox
 CallNodeContextMenu--copy-function-name = Copy function name
 CallNodeContextMenu--copy-script-url = Copy script URL
 CallNodeContextMenu--copy-stack = Copy stack
+CallNodeContextMenu--show-the-function-in-devtools = Show the function in DevTools
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -354,6 +379,8 @@ Home--additional-content-content = You can <strong>drag and drop</strong> a prof
 Home--compare-recordings-info = You can also compare recordings. <a>Open the comparing interface.</a>
 Home--your-recent-uploaded-recordings-title = Your recent uploaded recordings
 
+Home--dark-mode-title = Dark mode
+
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
@@ -363,6 +390,14 @@ Home--load-files-from-other-tools2 =
     any file using the <dhat>dhat format</dhat> or <traceevent>Google’s Trace Event
     Format</traceevent>. <write>Learn how to write your
     own importer</write>.
+
+Home--install-chrome-extension = Install the Chrome extension
+Home--chrome-extension-instructions = Use the <a>{ -profiler-brand-name } extension for Chrome</a>
+    to capture performance profiles in Chrome and analyze them in the
+    { -profiler-brand-name }. Install the extension from the Chrome Web Store.
+Home--chrome-extension-recording-instructions = Once installed, use the extension’s
+    toolbar icon or the shortcuts to start and stop profiling. You can also
+    export profiles and load them here for detailed analysis.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
@@ -450,6 +485,16 @@ MarkerContextMenu--select-the-sender-thread =
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching =
     Drop samples outside of markers matching “<strong>{ $filter }</strong>”
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain =
+    Copy marker table as plain text
+
+MarkerCopyTableContextMenu--copy-table-as-markdown =
+    Copy marker table as Markdown
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
@@ -459,6 +504,17 @@ MarkerSettings--panel-search =
 
 MarkerSettings--marker-filters =
     .title = Marker Filters
+
+MarkerSettings--copy-table =
+    .title = Copy table as text
+
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows =
+    The number of rows exceeds the limit: { $rows } > { $maxRows }. Only the first { $maxRows } rows will be copied.
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -472,6 +528,16 @@ MarkerTable--start = Start
 MarkerTable--duration = Duration
 MarkerTable--name = Name
 MarkerTable--details = Details
+
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .title = Only show markers matching: “{ $filter }”
+    .aria-label = Only show markers matching: “{ $filter }”
 
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
@@ -553,6 +619,8 @@ MenuButtons--metaInfo--profiling-started = Recording started:
 MenuButtons--metaInfo--profiling-session = Recording length:
 MenuButtons--metaInfo--main-process-started = Main process started:
 MenuButtons--metaInfo--main-process-ended = Main process ended:
+MenuButtons--metaInfo--file-name = File name:
+MenuButtons--metaInfo--file-size = File size:
 MenuButtons--metaInfo--interval = Interval:
 MenuButtons--metaInfo--buffer-capacity = Buffer capacity:
 MenuButtons--metaInfo--buffer-duration = Buffer duration:
@@ -678,6 +746,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 PanelSearch--search-field-hint =
     Did you know you can use the comma (,) to search using several terms?
 
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = Edit the profile name
+ProfileName--edit-profile-name-input =
+    .title = Edit the profile name
+    .aria-label = Profile name
+
 ## Profile Delete Button
 
 # This string is used on the tooltip of the published profile links delete button in uploaded recordings page.
@@ -727,6 +803,7 @@ ProfileFilterNavigator--full-range-with-duration = Full Range ({ $fullRangeDurat
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Importing and processing the profile…
 ProfileLoaderAnimation--loading-unpublished = Importing the profile directly from { -firefox-brand-name }…
 ProfileLoaderAnimation--loading-from-file = Reading the file and processing the profile…
 ProfileLoaderAnimation--loading-local = Not implemented yet.
@@ -767,8 +844,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = All frames
     .title = Do not filter the stack frames
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Show only the stack frames related to JavaScript execution
+StackSettings--implementation-script = Script
+    .title = Show only the stack frames related to script execution
 StackSettings--implementation-native2 = Native
     .title = Show only the stack frames for native code
 
@@ -792,6 +869,7 @@ StackSettings--call-tree-strategy-native-deallocations-sites = Deallocation Site
 StackSettings--invert-call-stack = Invert call stack
     .title = Sort by the time spent in a call node, ignoring its children.
 StackSettings--show-user-timing = Show user timing
+StackSettings--use-stack-chart-same-widths = Use the same width for each stack
 
 StackSettings--panel-search =
     .label = Filter stacks:
@@ -894,6 +972,12 @@ TrackPower--tooltip-power-watt = { $value } W
 # Variables:
 #   $value (String) - the power value at this location
 TrackPower--tooltip-power-milliwatt = { $value } mW
+  .label = Power
+
+# This is used in the tooltip when the instant power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-power-microwatt = { $value } μW
   .label = Power
 
 # This is used in the tooltip when the power value uses the kilowatt unit.
@@ -1063,6 +1147,13 @@ TransformNavigator--focus-subtree = Focus Node: { $item }
 #   $item (String) - Name of the function that transform applied to.
 TransformNavigator--focus-function = Focus: { $item }
 
+# "Focus self" transform.
+# See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-on-function-self
+# Also see the translation note above CallNodeContextMenu--transform-focus-self.
+# Variables:
+#   $item (String) - Name of the function that transform applied to.
+TransformNavigator--focus-self = Focus Self: { $item }
+
 # "Focus category" transform. The word "Focus" has the meaning of an adjective here.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-category
 # Variables:
@@ -1223,6 +1314,15 @@ SourceView--not-in-archive-error-when-obtaining-source =
 SourceView--archive-parsing-error-when-obtaining-source =
     The archive at { $url } could not be parsed: { $parsingErrorMessage }
 
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source =
+    The browser was unable to obtain the source file for { $url } with sourceUuid { $sourceUuid }: { $errorMessage }.
+
 ## Toggle buttons in the top right corner of the bottom box
 
 # The toggle button for the assembly view, while the assembly view is hidden.
@@ -1234,6 +1334,20 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = Hide the assembly view
+
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = Previous
+
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = Next
+
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = { $current } of { $total }
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.

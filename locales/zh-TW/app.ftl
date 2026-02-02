@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -30,6 +24,7 @@ AppHeader--github-icon =
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = 無法匯入效能檢測檔。
 AppViewRouter--error-unpublished = 無法從 { -firefox-brand-name } 取得效能檢測檔。
 AppViewRouter--error-from-file = 無法讀取檔案或剖析檔案當中的效能檢測資訊。
 AppViewRouter--error-local = 尚未實作。
@@ -43,6 +38,14 @@ AppViewRouter--error-from-localhost-url-safari = 由於 <a>Safari 的特殊限�
     .title = 無法使用 Safari 匯入本機效能檢測檔
 AppViewRouter--route-not-found--home =
     .specialMessage = 無法處理您嘗試開啟的網址。
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = （內聯）
+    .title = 編譯器將 { $function } 內聯到呼叫它的函式中。
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -89,6 +92,7 @@ CallNodeContextMenu--searchfox = 用 Searchfox 搜尋函數名稱
 CallNodeContextMenu--copy-function-name = 複製函數名稱
 CallNodeContextMenu--copy-script-url = 複製指令碼網址
 CallNodeContextMenu--copy-stack = 複製堆疊
+CallNodeContextMenu--show-the-function-in-devtools = 於開發者工具中顯示函數
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -173,8 +177,8 @@ CallTreeSidebar--self-bytes = Self 位元組
 
 CompareHome--instruction-title = 輸入您想要用來比較的檢測檔網址
 CompareHome--instruction-content = 此工具將從每個效能檢測檔當中抽出選擇的軌道與範圍相關資料，並將它們放到相同的畫面上，方便比較。
-CompareHome--form-label-profile1 = 檢測檔 1:
-CompareHome--form-label-profile2 = 檢測檔 2:
+CompareHome--form-label-profile1 = 檢測檔 1：
+CompareHome--form-label-profile2 = 檢測檔 2：
 CompareHome--submit-button =
     .value = 取得檢測檔
 
@@ -248,18 +252,22 @@ Home--enable-button-unavailable =
 Home--web-channel-unavailable = 此檢測器無法連線到 WebChannel。通常是因為執行檢測器的主機與 <code>devtools.performance.recording.ui-base-url</code> 偏好設定當中指定的主機不同。若您想要使用此檢測器捕捉新的效能檢測檔，並可程式化控制檢測器選單按鈕，可到 <code>about:config</code> 調整該偏好設定。
 Home--record-instructions = 請點擊檢測按鈕或按下鍵盤快速鍵即可開始進行檢測。進行效能紀錄時，此圖示將會顯示成藍色。按下<kbd>捕捉</kbd>即可將資料載入到 profiler.firefox.com。
 Home--instructions-content = 需要使用 <a>{ -firefox-brand-name }</a> 紀錄效能檢測檔。但可以使用任何現代瀏覽器檢視現有的檢測檔。
-Home--record-instructions-start-stop = 停止並開始檢測
+Home--record-instructions-start-stop = 停止或開始檢測
 Home--record-instructions-capture-load = 捕捉並載入檢測檔
 Home--profiler-motto = 捕捉效能檢測檔。分析、分享、讓網站運作更快。
 Home--additional-content-title = 載入現有檢測檔
-Home--additional-content-content = 您可以將效能檢測檔<strong>拖曳</strong>到此處，或:
+Home--additional-content-content = 您可以將效能檢測檔<strong>拖曳</strong>到此處，或：
 Home--compare-recordings-info = 您也可以比較紀錄內容。<a>開啟比較介面。</a>
 Home--your-recent-uploaded-recordings-title = 您近期上傳的紀錄
+Home--dark-mode-title = 暗色模式
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
     { -profiler-brand-name } 也可以匯入其他效能檢測器，例如 <perf>Linux perf</perf>、<simpleperf>Android SimplePerf</simpleperf>、Chrome 效能面板、<androidstudio>Android Studio</androidstudio> 所產生的效能檢測檔、任何使用 <dhat>dhat 格式</dhat> 或 <traceevent>Google 的 Trace Event
     格式</traceevent>儲存的效能檢測檔。<write>點擊此處了解如何撰寫您自己的匯入程式</write>。
+Home--install-chrome-extension = 安裝 Chrome 擴充套件
+Home--chrome-extension-instructions = 可使用 <a>Chrome 的 { -profiler-brand-name } 擴充套件</a>，在 Chrome 當中捕捉效能紀錄檔，再使用 { -profiler-brand-name } 進行分析。請到 Chrome 線上應用程式商店安裝此套件。
+Home--chrome-extension-recording-instructions = 安裝完成後，即可使用擴充套件在工具列新增的圖示或快速鍵開始或停止捕捉效能紀錄。您也可以匯出檢測檔，匯入此處，進行更詳細的分析。
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
@@ -334,14 +342,29 @@ MarkerContextMenu--select-the-sender-thread = 選擇傳送執行緒「<strong>{ 
 #   $filter (String) - Search string that will be used to filter the markers.
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = 丟棄不符合「<strong>{ $filter }</strong>」標記的取樣
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = 用純文字格式複製標記表
+MarkerCopyTableContextMenu--copy-table-as-markdown = 用 Markdown 格式複製標記表
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
 MarkerSettings--panel-search =
-    .label = 過濾標記:
+    .label = 過濾標記：
     .title = 只顯示符合特定名稱的標記
 MarkerSettings--marker-filters =
     .title = 標記過濾器
+MarkerSettings--copy-table =
+    .title = 用純文字複製表格
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = 資料列數超過限制：{ $rows } > { $maxRows }，只複製最前 { $maxRows } 列。
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -355,6 +378,16 @@ MarkerTable--start = 開始
 MarkerTable--duration = 持續時間
 MarkerTable--name = 名稱
 MarkerTable--details = 詳細資訊
+
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .title = 只顯示符合「{ $filter }」的標記
+    .aria-label = 只顯示符合「{ $filter }」的標記
 
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
@@ -378,18 +411,18 @@ MenuButtons--permalink--button =
 ## These strings are used in the panel containing the meta information about
 ## the current profile.
 
-MenuButtons--index--profile-info-uploaded-label = 上傳於:
+MenuButtons--index--profile-info-uploaded-label = 上傳於：
 MenuButtons--index--profile-info-uploaded-actions = 刪除
 MenuButtons--index--metaInfo-subtitle = 檢測檔資訊
-MenuButtons--metaInfo--symbols = 符號:
+MenuButtons--metaInfo--symbols = 符號：
 MenuButtons--metaInfo--profile-symbolicated = 檢測檔已符號化
 MenuButtons--metaInfo--profile-not-symbolicated = 檢測檔未符號化
 MenuButtons--metaInfo--resymbolicate-profile = 重新將檢測檔符號化
 MenuButtons--metaInfo--symbolicate-profile = 符號化檢測檔
 MenuButtons--metaInfo--attempting-resymbolicate = 正在嘗試重新符號化檢測檔
 MenuButtons--metaInfo--currently-symbolicating = 目前符號化的檢測檔
-MenuButtons--metaInfo--cpu-model = CPU 型號:
-MenuButtons--metaInfo--cpu-cores = CPU 核心數:
+MenuButtons--metaInfo--cpu-model = CPU 型號：
+MenuButtons--metaInfo--cpu-cores = CPU 核心數：
 MenuButtons--metaInfo--main-memory = 主要記憶體：
 MenuButtons--index--show-moreInfo-button = 顯示更多
 MenuButtons--index--hide-moreInfo-button = 顯示更少
@@ -399,9 +432,10 @@ MenuButtons--index--hide-moreInfo-button = 顯示更少
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-       *[other] { $physicalCPUs } 顆實體核心
-    }、{ $logicalCPUs ->
-       *[other] { $logicalCPUs } 顆邏輯核心
+       *[other]
+            { $logicalCPUs ->
+               *[other] { $physicalCPUs } 顆實體核心、{ $logicalCPUs } 顆邏輯核心
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -421,11 +455,13 @@ MenuButtons--metaInfo--logical-cpu =
     }
 MenuButtons--metaInfo--profiling-started = 紀錄開始於：
 MenuButtons--metaInfo--profiling-session = 紀錄長度：
-MenuButtons--metaInfo--main-process-started = 主處理程序開始:
+MenuButtons--metaInfo--main-process-started = 主處理程序開始：
 MenuButtons--metaInfo--main-process-ended = 主要處理程序結束於：
-MenuButtons--metaInfo--interval = 間隔:
-MenuButtons--metaInfo--buffer-capacity = 緩衝容量:
-MenuButtons--metaInfo--buffer-duration = 緩衝間隔:
+MenuButtons--metaInfo--file-name = 檔案名稱：
+MenuButtons--metaInfo--file-size = 檔案大小：
+MenuButtons--metaInfo--interval = 間隔：
+MenuButtons--metaInfo--buffer-capacity = 緩衝區容量：
+MenuButtons--metaInfo--buffer-duration = 緩衝區長度：
 # Buffer Duration in Seconds in Meta Info Panel
 # Variable:
 #   $configurationDuration (Number) - Configuration Duration in Seconds
@@ -436,11 +472,11 @@ MenuButtons--metaInfo--buffer-duration-seconds =
 # Adjective refers to the buffer duration
 MenuButtons--metaInfo--buffer-duration-unlimited = 無限制
 MenuButtons--metaInfo--application = 應用程式
-MenuButtons--metaInfo--name-and-version = 名稱與版本:
+MenuButtons--metaInfo--name-and-version = 名稱與版本：
 MenuButtons--metaInfo--application-uptime = 運作時間：
-MenuButtons--metaInfo--update-channel = 更新頻道:
-MenuButtons--metaInfo--build-id = Build ID:
-MenuButtons--metaInfo--build-type = Build Type:
+MenuButtons--metaInfo--update-channel = 更新頻道：
+MenuButtons--metaInfo--build-id = Build ID：
+MenuButtons--metaInfo--build-type = Build Type：
 MenuButtons--metaInfo--arguments = 參數：
 
 ## Strings refer to specific types of builds, and should be kept in English.
@@ -451,20 +487,20 @@ MenuButtons--metaInfo--build-type-opt = Opt
 ##
 
 MenuButtons--metaInfo--platform = 平台
-MenuButtons--metaInfo--device = 裝置:
+MenuButtons--metaInfo--device = 裝置：
 # OS means Operating System. This describes the platform a profile was captured on.
-MenuButtons--metaInfo--os = OS:
+MenuButtons--metaInfo--os = OS：
 # ABI means Application Binary Interface. This describes the platform a profile was captured on.
-MenuButtons--metaInfo--abi = ABI:
+MenuButtons--metaInfo--abi = ABI：
 MenuButtons--metaInfo--visual-metrics = 視覺指標
-MenuButtons--metaInfo--speed-index = Speed Index:
+MenuButtons--metaInfo--speed-index = Speed Index：
 # “Perceptual” is the name of an index provided by sitespeed.io, and should be kept in English.
-MenuButtons--metaInfo--perceptual-speed-index = Perceptual Speed Index:
+MenuButtons--metaInfo--perceptual-speed-index = Perceptual Speed Index：
 # “Contentful” is the name of an index provided by sitespeed.io, and should be kept in English.
-MenuButtons--metaInfo--contentful-speed-Index = Contentful Speed Index:
-MenuButtons--metaInfo-renderRowOfList-label-features = 功能:
-MenuButtons--metaInfo-renderRowOfList-label-threads-filter = 執行緒過濾器:
-MenuButtons--metaInfo-renderRowOfList-label-extensions = 擴充套件:
+MenuButtons--metaInfo--contentful-speed-Index = Contentful Speed Index：
+MenuButtons--metaInfo-renderRowOfList-label-features = 功能：
+MenuButtons--metaInfo-renderRowOfList-label-threads-filter = 執行緒過濾器：
+MenuButtons--metaInfo-renderRowOfList-label-extensions = 擴充套件：
 
 ## Overhead refers to the additional resources used to run the profiler.
 ## These strings are displayed at the bottom of the "Profile Info" panel.
@@ -483,9 +519,9 @@ MenuButtons--metaOverheadStatistics-statkeys-interval = 間隔
     .title = 兩次計量間的間隔。
 MenuButtons--metaOverheadStatistics-statkeys-lockings = 鎖定
     .title = 進行計量前取得鎖定所需的時間。
-MenuButtons--metaOverheadStatistics-overhead-duration = 額外負荷持續時間:
-MenuButtons--metaOverheadStatistics-overhead-percentage = 額外負荷比例:
-MenuButtons--metaOverheadStatistics-profiled-duration = 檢測的持續時間:
+MenuButtons--metaOverheadStatistics-overhead-duration = 額外負荷持續時間：
+MenuButtons--metaOverheadStatistics-overhead-percentage = 額外負荷比例：
+MenuButtons--metaOverheadStatistics-profiled-duration = 檢測的持續時間：
 
 ## Publish panel
 ## These strings are used in the publishing panel.
@@ -519,7 +555,7 @@ MenuButtons--publish--error-while-compressing = 壓縮時發生錯誤，請嘗�
 ## This is used in the network chart.
 
 NetworkSettings--panel-search =
-    .label = 過濾網路請求:
+    .label = 過濾網路請求：
     .title = 只顯示符合某些名稱的網路請求
 
 ## Timestamp formatting primitive
@@ -540,6 +576,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 ## The component that is used for all the search input hints in the application.
 
 PanelSearch--search-field-hint = 您知道可以使用半形逗號（,）搜尋多個詞彙嗎？
+
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = 編輯效能檢測檔名稱
+ProfileName--edit-profile-name-input =
+    .title = 編輯效能檢測檔名稱
+    .aria-label = 效能檢測檔名稱
 
 ## Profile Delete Button
 
@@ -586,6 +630,7 @@ ProfileFilterNavigator--full-range-with-duration = 完整範圍（{ $fullRangeDu
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = 正在匯入與處理效能檢測檔…
 ProfileLoaderAnimation--loading-unpublished = 直接從 { -firefox-brand-name } 匯入檢測檔…
 ProfileLoaderAnimation--loading-from-file = 正在讀取檔案並處理檢測檔…
 ProfileLoaderAnimation--loading-local = 尚未實作。
@@ -626,13 +671,13 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = 所有堆疊框
     .title = 不過濾堆疊框
-StackSettings--implementation-javascript2 = JavaScript
-    .title = 僅顯示與執行 JavaScript 有關的堆疊框
+StackSettings--implementation-script = 指令碼
+    .title = 僅顯示指令碼執行相關的堆疊框
 StackSettings--implementation-native2 = 原生
     .title = 僅顯示原生程式碼相關的堆疊框
 # This label is displayed in the marker chart and marker table panels only.
-StackSettings--stack-implementation-label = 過濾堆疊:
-StackSettings--use-data-source-label = 資料來源:
+StackSettings--stack-implementation-label = 過濾堆疊：
+StackSettings--use-data-source-label = 資料來源：
 StackSettings--call-tree-strategy-timing = 計時
     .title = 使用紀錄到已執行的程式碼顯示摘要
 StackSettings--call-tree-strategy-js-allocations = JavaScript 分配
@@ -648,8 +693,9 @@ StackSettings--call-tree-strategy-native-deallocations-sites = 取消分配的�
 StackSettings--invert-call-stack = 反轉呼叫堆疊
     .title = 依照呼叫節點當中花費的時間排序，並忽略其 children。
 StackSettings--show-user-timing = 顯示使用者計時
+StackSettings--use-stack-chart-same-widths = 將每個堆疊以相同寬度顯示
 StackSettings--panel-search =
-    .label = 過濾堆疊:
+    .label = 過濾堆疊：
     .title = 只顯示包含符合的子字串的函數名稱的相關堆疊
 
 ## Tab Bar for the bottom half of the analysis UI.
@@ -714,7 +760,7 @@ TrackNameButton--hide-process =
 
 TrackMemoryGraph--relative-memory-at-this-time = 此時的相對記憶體用量
 TrackMemoryGraph--memory-range-in-graph = 圖表中的記憶體範圍
-TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample = 上次取樣以來的分配予取消分配
+TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample = 上次取樣以來的分配與取消分配
 
 ## TrackPower
 ## This is used to show the power used by the CPU and other chips in a computer,
@@ -879,37 +925,37 @@ TransformNavigator--complete = 完成「{ $item }」
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=collapse
 # Variables:
 #   $item (String) - Name of the resource that collapsed. E.g.: libxul.so.
-TransformNavigator--collapse-resource = 摺疊: { $item }
+TransformNavigator--collapse-resource = 摺疊：{ $item }
 # "Focus subtree" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
-TransformNavigator--focus-subtree = 聚焦節點: { $item }
+TransformNavigator--focus-subtree = 聚焦節點：{ $item }
 # "Focus function" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
-TransformNavigator--focus-function = 聚焦: { $item }
+TransformNavigator--focus-function = 聚焦：{ $item }
 # "Focus category" transform. The word "Focus" has the meaning of an adjective here.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-category
 # Variables:
 #   $item (String) - Name of the category that transform applied to.
-TransformNavigator--focus-category = 聚焦於分類: { $item }
+TransformNavigator--focus-category = 聚焦於分類：{ $item }
 # "Merge call node" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=merge
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
-TransformNavigator--merge-call-node = 合併節點: { $item }
+TransformNavigator--merge-call-node = 合併節點：{ $item }
 # "Merge function" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=merge
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
-TransformNavigator--merge-function = 合併: { $item }
+TransformNavigator--merge-function = 合併：{ $item }
 # "Drop function" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=drop
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
-TransformNavigator--drop-function = 丟棄: { $item }
+TransformNavigator--drop-function = 丟棄：{ $item }
 # "Collapse recursion" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=collapse
 # Variables:
@@ -924,7 +970,7 @@ TransformNavigator--collapse-direct-recursion-only = 僅摺疊直接遞迴：{ $
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=collapse
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
-TransformNavigator--collapse-function-subtree = 摺疊子樹: { $item }
+TransformNavigator--collapse-function-subtree = 摺疊子樹：{ $item }
 # "Drop samples outside of markers matching ..." transform.
 # Variables:
 #   $item (String) - Search filter of the markers that transform will apply to.
@@ -976,23 +1022,23 @@ SourceView--no-known-cors-url = 這個檔案沒有已知的 cross-origin-accessi
 # Variables:
 #   $url (String) - The URL which we tried to get the source code from
 #   $networkErrorMessage (String) - The raw internal error message that was encountered by the network request, not localized
-SourceView--network-error-when-obtaining-source = 取得網址 { $url } 時發生網路錯誤: { $networkErrorMessage }
+SourceView--network-error-when-obtaining-source = 取得網址 { $url } 時發生網路錯誤：{ $networkErrorMessage }
 # Displayed below SourceView--cannot-obtain-source, if the browser could not
 # be queried for source code using the symbolication API.
 # Variables:
 #   $browserConnectionErrorMessage (String) - The raw internal error message, not localized
-SourceView--browser-connection-error-when-obtaining-source = 無法查詢瀏覽器的符號化 API: { $browserConnectionErrorMessage }
+SourceView--browser-connection-error-when-obtaining-source = 無法查詢瀏覽器的符號化 API：{ $browserConnectionErrorMessage }
 # Displayed below SourceView--cannot-obtain-source, if the browser was queried
 # for source code using the symbolication API, and this query returned an error.
 # Variables:
 #   $apiErrorMessage (String) - The raw internal error message from the API, not localized
-SourceView--browser-api-error-when-obtaining-source = 瀏覽器的符號化 API 回傳錯誤: { $apiErrorMessage }
+SourceView--browser-api-error-when-obtaining-source = 瀏覽器的符號化 API 回傳錯誤：{ $apiErrorMessage }
 # Displayed below SourceView--cannot-obtain-source, if a symbol server which is
 # running locally was queried for source code using the symbolication API, and
 # this query returned an error.
 # Variables:
 #   $apiErrorMessage (String) - The raw internal error message from the API, not localized
-SourceView--local-symbol-server-api-error-when-obtaining-source = 本機符號伺服器的符號化 API 回傳錯誤: { $apiErrorMessage }
+SourceView--local-symbol-server-api-error-when-obtaining-source = 本機符號伺服器的符號化 API 回傳錯誤：{ $apiErrorMessage }
 # Displayed below SourceView--cannot-obtain-source, if the browser was queried
 # for source code using the symbolication API, and this query returned a malformed response.
 # Variables:
@@ -1016,7 +1062,14 @@ SourceView--not-in-archive-error-when-obtaining-source = 下載自 { $url } 的�
 # Variables:
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
-SourceView--archive-parsing-error-when-obtaining-source = 無法剖析下載自 { $url } 的封存檔: { $parsingErrorMessage }
+SourceView--archive-parsing-error-when-obtaining-source = 無法剖析下載自 { $url } 的封存檔：{ $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = 瀏覽器無法取得 sourceUuid 為 { $sourceUuid }，位於 { $url } 的原始碼檔案：{ $errorMessage }。
 
 ## Toggle buttons in the top right corner of the bottom box
 
@@ -1028,6 +1081,17 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = 隱藏機器碼畫面
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = 上一個
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = 下一個
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = 第 { $current } 個，共 { $total } 個
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.

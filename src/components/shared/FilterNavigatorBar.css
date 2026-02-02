@@ -3,7 +3,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 .filterNavigatorBar {
+  --internal-background-color: transparent;
+  --internal-hover-background-color: rgb(0 0 0 / 0.1);
+  --internal-hover-color: inherit;
+  --internal-active-background-color: rgb(0 0 0 / 0.2);
+  --internal-selected-background-color: transparent;
   --internal-selected-color: var(--selected-color, var(--blue-60));
+  --internal-separator-img: url(../../../res/img/svg/scope-bar-separator.svg);
 
   display: flex;
   height: 24px;
@@ -14,7 +20,19 @@
   cursor: default;
   user-select: none;
 
-  /* Note: no overflow: hidden so that we can see the exit animation for ranges */
+  /* Note: no overflow: hidden for historical reasons - we wanted to see
+     an animation for items at the end while they were fading out, but
+     we have removed this animation in the meantime */
+}
+
+:root.dark-mode {
+  .filterNavigatorBar {
+    --internal-selected-color: var(--selected-color, var(--blue-40));
+    --internal-separator-img: url(../../../res/img/svg/scope-bar-separator-light.svg);
+    --internal-hover-background-color: rgb(255 255 255 / 0.1);
+    --internal-hover-color: var(--base-foreground-color);
+    --internal-active-background-color: rgb(255 255 255 / 0.2);
+  }
 }
 
 .filterNavigatorBarItem {
@@ -28,10 +46,12 @@
   border-width: 0 8px 0 6px;
   border-right-color: transparent !important;
   background-clip: padding-box;
+  background-color: var(--internal-background-color);
+
+  /* Make sure the design also works in High Contrast Mode. The colors are overriden
+     in the forced colors media query. */
+  forced-color-adjust: none;
   line-height: 24px;
-  transition:
-    opacity 250ms var(--animation-curve),
-    transform 250ms var(--animation-curve);
 }
 
 .filterNavigatorBarRootItem {
@@ -87,30 +107,28 @@
 }
 
 .filterNavigatorBarItem:not(.filterNavigatorBarLeafItem)::after {
-  animation: fadeIn 250ms var(--animation-curve);
-  background-image: url(../../../res/img/svg/scope-bar-separator.svg);
+  background-image: var(--internal-separator-img);
   background-position: -18px -12px;
   background-repeat: no-repeat;
   background-size: 24px 24px;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-.filterNavigatorBarSelectedItem {
+.filterNavigatorBarItem.filterNavigatorBarSelectedItem {
+  background-color: var(--internal-selected-background-color);
   color: var(--internal-selected-color);
 }
 
+.filterNavigatorBarSelectedItem:not(.filterNavigatorBarRootItem)::before,
+.filterNavigatorBarSelectedItem:not(:first-of-type:last-of-type)::after {
+  border-color: var(--internal-selected-background-color);
+}
+
 .filterNavigatorBarItem:not(.filterNavigatorBarLeafItem):hover,
-.filterNavigatorBarItem:has(button.profileFilterNavigator--tab-selector):hover {
-  background-color: rgb(0 0 0 / 0.1);
+.filterNavigatorBarItem:has(
+    .profileFilterNavigator--tab-selector.button
+  ):hover {
+  background-color: var(--internal-hover-background-color);
+  color: var(--internal-hover-color);
 }
 
 .filterNavigatorBarItem:not(
@@ -118,11 +136,11 @@
     .filterNavigatorBarLeafItem
   ):hover::before,
 .filterNavigatorBarItem:not(.filterNavigatorBarLeafItem):hover::after {
-  border-color: rgb(0 0 0 / 0.1);
+  border-color: var(--internal-hover-background-color);
 }
 
 .filterNavigatorBarItem:not(.filterNavigatorBarLeafItem):active:hover {
-  background-color: rgb(0 0 0 / 0.2);
+  background-color: var(--internal-active-background-color);
 }
 
 .filterNavigatorBarItem:not(
@@ -130,49 +148,46 @@
     .filterNavigatorBarLeafItem
   ):active:hover::before,
 .filterNavigatorBarItem:not(.filterNavigatorBarLeafItem):active:hover::after {
-  border-color: rgb(0 0 0 / 0.2);
+  border-color: var(--internal-active-background-color);
 }
 
 .filterNavigatorBarUncommittedItem {
   opacity: 0.65;
 }
 
-/* Animation */
+@media (forced-colors: active) {
+  .filterNavigatorBar {
+    --internal-background-color: ButtonFace !important;
+    --internal-hover-background-color: SelectedItemText !important;
+    --internal-hover-color: SelectedItem !important;
+    --internal-active-background-color: SelectedItemText !important;
+    --internal-selected-background-color: SelectedItem !important;
+    --internal-selected-color: SelectedItemText !important;
+    --internal-separator-img: url(../../../res/img/svg/scope-bar-separator-hcm-light.svg) !important;
+  }
 
-.filterNavigatorBarUncommittedTransition-exit {
-  /* Because of the underlying transition library, this element is still here
-   * while the new "committed" element is created, which pushes it further
-   * right. By using display: none here, we prevent this bad effect. */
-  display: none;
-}
-
-.filterNavigatorBarTransition-enter {
-  color: inherit;
-
-  /* We use the same value as the uncommitted item.
-   * Note that the "uncommitted item" won't have this "enter" class when
-   * committing, because of how we insert it (it's not part of the same loop). */
-  opacity: 0.65;
-}
-
-.filterNavigatorBarTransition-enter.filterNavigatorBarTransition-enter-active {
-  color: var(--internal-selected-color);
-  opacity: 1;
-}
-
-.filterNavigatorBarTransition-exit {
-  opacity: 1;
-}
-
-.filterNavigatorBarTransition-exit.filterNavigatorBarTransition-exit-active {
-  opacity: 0;
-  transform: translateX(50%);
-}
-
-/* Do not animate the filter navigator bar items when user prefers reduced motion */
-@media (prefers-reduced-motion) {
   .filterNavigatorBarItem {
-    animation: none;
-    transition: none;
+    color: ButtonText;
+  }
+
+  /* When the tab selector is active, we want the item to look like a button */
+  .filterNavigatorBarSelectedItem:has(
+    .profileFilterNavigator--tab-selector.button
+  ) {
+    background-color: ButtonFace;
+    color: ButtonText;
+  }
+
+  /* In regular mode, the opacity is tweaked, which isn't suited for High Contrast Mode.
+     Here we want the full opacity and a gray text */
+  .filterNavigatorBarUncommittedItem {
+    color: GrayText;
+    opacity: 1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .filterNavigatorBar {
+      --internal-separator-img: url(../../../res/img/svg/scope-bar-separator-hcm-dark.svg);
+    }
   }
 }

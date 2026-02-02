@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -30,6 +24,7 @@ AppHeader--github-icon =
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Det gick inte att importera profilen.
 AppViewRouter--error-unpublished = Det gick inte att hämta profilen från { -firefox-brand-name }.
 AppViewRouter--error-from-file = Det gick inte att läsa filen eller analysera profilen i den.
 AppViewRouter--error-local = Inte implementerat ännu.
@@ -46,6 +41,14 @@ AppViewRouter--error-from-localhost-url-safari =
     .title = Safari kan inte importera lokala profiler
 AppViewRouter--route-not-found--home =
     .specialMessage = Webbadressen du försökte nå kändes inte igen.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (infogad)
+    .title = { $function } infogades i sin anropare av kompilatorn.
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -118,6 +121,7 @@ CallNodeContextMenu--searchfox = Leta upp funktionsnamnet på Searchfox
 CallNodeContextMenu--copy-function-name = Kopiera funktionsnamn
 CallNodeContextMenu--copy-script-url = Kopiera skript-URL
 CallNodeContextMenu--copy-stack = Kopiera stack
+CallNodeContextMenu--show-the-function-in-devtools = Visa funktionen i DevTools
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -328,6 +332,7 @@ Home--additional-content-title = Ladda befintliga profiler
 Home--additional-content-content = Du kan <strong>dra och släppa</strong> en profilfil här för att ladda den, eller:
 Home--compare-recordings-info = Du kan också jämföra inspelningar.<a>Öppna gränssnitt för att jämföra.</a>
 Home--your-recent-uploaded-recordings-title = Dina senaste uppladdade inspelningar
+Home--dark-mode-title = Mörkt läge
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
@@ -337,6 +342,15 @@ Home--load-files-from-other-tools2 =
     vilken fil som helst som använder <dhat>dhat-formatet</dhat> eller <traceevent>Googles spårningshändelse
     Format</traceevent>. <write>Lär dig hur du skriver din
     egen importör</write>.
+Home--install-chrome-extension = Installera tillägget för Chrome
+Home--chrome-extension-instructions =
+    Använd tillägget <a>{ -profiler-brand-name } för Chrome</a>
+    för att fånga prestandaprofiler i Chrome och analysera dem i
+    { -profiler-brand-name }. Installera tillägget från Chrome Web Store.
+Home--chrome-extension-recording-instructions =
+    När det är installerat använder du tilläggets verktygsfältsikon
+    eller genvägarna för att starta och stoppa profilering.
+    Du kan också exportera profiler och ladda dem här för detaljerad analys.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
@@ -411,6 +425,13 @@ MarkerContextMenu--select-the-sender-thread = Välj avsändartråden "<strong>{ 
 #   $filter (String) - Search string that will be used to filter the markers.
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = Kasta prover utanför markörer som matchar "<strong>{ $filter }</strong>"
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = Kopiera markörtabell som vanlig text
+MarkerCopyTableContextMenu--copy-table-as-markdown = Kopiera markörtabell som Markdown
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
@@ -419,6 +440,14 @@ MarkerSettings--panel-search =
     .title = Visa endast markörer som matchar ett visst namn
 MarkerSettings--marker-filters =
     .title = Markörfilter
+MarkerSettings--copy-table =
+    .title = Kopiera tabell som text
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = Antalet rader överskrider gränsen: { $rows } > { $maxRows }. Endast de första { $maxRows } raderna kommer att kopieras.
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -432,6 +461,16 @@ MarkerTable--start = Börja
 MarkerTable--duration = Längd
 MarkerTable--name = Namn
 MarkerTable--details = Detaljer
+
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .title = Visa endast markörer som matchar: "{ $filter }"
+    .aria-label = Visa endast markörer som matchar: "{ $filter }"
 
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
@@ -476,11 +515,16 @@ MenuButtons--index--hide-moreInfo-button = Visa mindre
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-        [one] { $physicalCPUs } fysisk kärna
-       *[other] { $physicalCPUs } fysiska kärnor
-    }, { $logicalCPUs ->
-        [one] { $logicalCPUs } logisk kärna
-       *[other] { $logicalCPUs } logiska kärnor
+        [one]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } fysisk kärna, { $logicalCPUs } logisk kärna
+               *[other] { $physicalCPUs } fysisk kärna, { $logicalCPUs } logiska kärnor
+            }
+       *[other]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } fysiska kärnor, { $logicalCPUs } logisk kärna
+               *[other] { $physicalCPUs } fysiska kärnor, { $logicalCPUs } logiska kärnor
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -504,6 +548,8 @@ MenuButtons--metaInfo--profiling-started = Inspelningen startade:
 MenuButtons--metaInfo--profiling-session = Inspelningslängd:
 MenuButtons--metaInfo--main-process-started = Huvudprocessen startade:
 MenuButtons--metaInfo--main-process-ended = Huvudprocessen avslutad:
+MenuButtons--metaInfo--file-name = Filnamn:
+MenuButtons--metaInfo--file-size = Filstorlek:
 MenuButtons--metaInfo--interval = Intervall:
 MenuButtons--metaInfo--buffer-capacity = Buffertkapacitet:
 MenuButtons--metaInfo--buffer-duration = Buffertlängd:
@@ -623,6 +669,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 
 PanelSearch--search-field-hint = Visste du att du kan använda komma (,) för att söka med flera termer?
 
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = Redigera profilnamn
+ProfileName--edit-profile-name-input =
+    .title = Redigera profilnamn
+    .aria-label = Profilnamn
+
 ## Profile Delete Button
 
 # This string is used on the tooltip of the published profile links delete button in uploaded recordings page.
@@ -670,6 +724,7 @@ ProfileFilterNavigator--full-range-with-duration = Fullt intervall ({ $fullRange
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Importerar och bearbetar profilen…
 ProfileLoaderAnimation--loading-unpublished = Importerar profilen direkt från { -firefox-brand-name }…
 ProfileLoaderAnimation--loading-from-file = Läser fil och bearbetar profil…
 ProfileLoaderAnimation--loading-local = Inte implementerat ännu.
@@ -709,8 +764,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = Alla ramar
     .title = Filtrera inte stackramar
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Visa endast stackramar relaterade till JavaScript-körning
+StackSettings--implementation-script = Skript
+    .title = Visa endast stackramar relaterade till skriptkörning
 StackSettings--implementation-native2 = Intern
     .title = Visa bara stackramar för intern kod
 # This label is displayed in the marker chart and marker table panels only.
@@ -731,6 +786,7 @@ StackSettings--call-tree-strategy-native-deallocations-sites = Tilldelningswebbp
 StackSettings--invert-call-stack = Invertera anropsstack
     .title = Sortera efter tiden i en anropsnod, utan att ignorera dess barn.
 StackSettings--show-user-timing = Visa användartiming
+StackSettings--use-stack-chart-same-widths = Använd samma bredd för varje stack
 StackSettings--panel-search =
     .label = Filtrera stackar:
     .title = Visa endast stackar som innehåller en funktion vars namn matchar denna delsträng
@@ -1100,6 +1156,13 @@ SourceView--not-in-archive-error-when-obtaining-source = Filen { $pathInArchive 
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = Arkivet på { $url } kunde inte analyseras: { $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = Webbläsaren kunde inte hämta källfilen för { $url } med sourceUuid { $sourceUuid }: { $errorMessage }.
 
 ## Toggle buttons in the top right corner of the bottom box
 
@@ -1111,6 +1174,17 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = Dölj assembly-vyn
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = Föregående
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = Nästa
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = { $current } av { $total }
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.

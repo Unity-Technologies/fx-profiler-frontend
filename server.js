@@ -1,7 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-// @noflow
 const webpack = require('webpack');
 const WebpackDevServer = require('webpack-dev-server');
 const profileServer = require('./profile-server');
@@ -30,7 +29,7 @@ config.cache = {
   type: 'filesystem',
 };
 const serverConfig = {
-  allowedHosts: ['localhost', '.gitpod.io'],
+  allowedHosts: ['localhost', '.app.github.dev'],
   host,
   port,
   // We disable hot reloading because this takes lot of CPU and memory in the
@@ -47,7 +46,6 @@ const serverConfig = {
     // /!\ Don't forget to keep it sync-ed with the headers here /!\
     'X-Content-Type-Options': 'nosniff',
     'X-XSS-Protection': '1; mode=block',
-    'X-Frame-Options': 'SAMEORIGIN',
     'Referrer-Policy': 'same-origin',
     'Content-Security-Policy': oneLine`
       default-src 'self';
@@ -59,7 +57,6 @@ const serverConfig = {
       img-src http: https: data:;
       object-src 'none';
       connect-src *;
-      frame-ancestors 'self';
       form-action 'none'
     `,
   },

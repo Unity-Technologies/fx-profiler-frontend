@@ -8,6 +8,8 @@ flow-coverage
 coverage
 .eslintcache
 .prettiercache
+.tsbuildinfo
 webpack.local-config.js
 *.orig
 *.rej
+.idea/
