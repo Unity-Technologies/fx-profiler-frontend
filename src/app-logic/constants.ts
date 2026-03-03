@@ -107,7 +107,7 @@ export const GOOGLE_STORAGE_BUCKET = 'unity-profile-storage-dev';
 // profiles and manage shortlinks.
 
 // This is Unity's production server:
-export const PROFILER_SERVER_ORIGIN = 'https://profiler.cds.internal.unity3d.com';
+export const PROFILER_SERVER_ORIGIN = 'https://rnd-performance-profopt-samply-server.cds.internal.unity3d.com';
 
 // This is the production server:
 // export const PROFILER_SERVER_ORIGIN = 'https://api.profiler.firefox.com';
@@ -122,7 +122,7 @@ export const PROFILER_SERVER_ORIGIN = 'https://profiler.cds.internal.unity3d.com
 // --------------------------
 // If shortening is enabled and this is not null, all full URLs will be forced to have
 // this host before being shortened.
-export const PROFILER_URL_REQUIRED_ROOT = 'profiler.cds.internal.unity3d.com';
+export const PROFILER_URL_REQUIRED_ROOT = 'rnd-performance-profopt-samply-server.cds.internal.unity3d.com';
 //export const PROFILER_URL_REQUIRED_ROOT = 'profiler.firefox.com';
 
 // ENABLE_URL_SHORTENING
