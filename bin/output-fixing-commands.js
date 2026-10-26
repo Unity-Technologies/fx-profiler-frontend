@@ -1,28 +1,44 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-// @flow
 
 // This file runs before linting commands and intercept errors so that more
 // friendly errors can be output.
 
-const cp = require('child_process');
+const spawn = require('cross-spawn');
 
 const fixingCommands = {
   lint: 'lint-fix',
   'lint-js': 'lint-fix-js',
   'lint-css': 'lint-fix-css',
-  'prettier-run': 'prettier-fix',
+  'fmt-check': 'fmt',
   test: 'test -u',
+  'test-cli': 'test-cli -u',
 };
 
 const command = process.argv.slice(2);
+const currentScriptName = process.env.npm_lifecycle_event;
 
-const result = cp.spawnSync(command[0], command.slice(1), { stdio: 'inherit' });
+// Redirect the main lint command, but not individual commands.
+if (currentScriptName === 'lint' && command.includes('--fix')) {
+  console.log(`🔧 Detected --fix flag, running: yarn lint-fix`);
+  const result = spawn.sync('yarn', ['lint-fix'], { stdio: 'inherit' });
+  if (result.error) {
+    console.error(`❌ Failed to spawn command: ${result.error.message}`);
+    process.exitCode = 1;
+  } else {
+    process.exitCode = result.status;
+  }
+  process.exit();
+}
 
-if (result.status !== 0) {
+const result = spawn.sync(command[0], command.slice(1), { stdio: 'inherit' });
+
+if (result.error) {
+  console.error(`❌ Failed to spawn command: ${result.error.message}`);
+  process.exitCode = 1;
+} else if (result.status !== 0) {
   process.exitCode = result.status;
-  const currentScriptName = process.env.npm_lifecycle_event;
   if (currentScriptName && currentScriptName in fixingCommands) {
     console.log(
       '💡 You might be able to fix the error by running `yarn ' +

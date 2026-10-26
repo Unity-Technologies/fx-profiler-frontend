@@ -1,0 +1,1594 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+import { oneLine } from 'common-tags';
+import {
+  fetchProfile,
+  getProfileUrlForHash,
+  type ProfileOrZip,
+  deduceContentType,
+  extractJsonFromArrayBuffer,
+} from 'firefox-profiler/utils/profile-fetch';
+import queryString from 'query-string';
+import type JSZip from 'jszip';
+import {
+  insertExternalMarkersIntoProfile,
+  insertExternalPowerCountersIntoProfile,
+  processGeckoProfile,
+  unserializeProfileOfArbitraryFormat,
+} from 'firefox-profiler/profile-logic/process-profile';
+import {
+  readSymbolsFromSymbolTable,
+  SymbolStore,
+} from 'firefox-profiler/profile-logic/symbol-store';
+import {
+  symbolicateProfile,
+  applySymbolicationSteps,
+} from 'firefox-profiler/profile-logic/symbolication';
+import * as MozillaSymbolicationAPI from 'firefox-profiler/profile-logic/mozilla-symbolication-api';
+import { mergeProfilesForDiffing } from 'firefox-profiler/profile-logic/merge-compare';
+import { expandUrl } from 'firefox-profiler/utils/shorten-url';
+import { TemporaryError } from 'firefox-profiler/utils/errors';
+import {
+  getSelectedThreadIndexesOrNull,
+  getGlobalTrackOrder,
+  getHiddenGlobalTracks,
+  getHiddenLocalTracksByPid,
+  getLocalTrackOrderByPid,
+  getLegacyThreadOrder,
+  getLegacyHiddenThreads,
+  getProfileOrNull,
+  getProfile,
+  getView,
+  getSymbolServerUrl,
+  getBrowserConnection,
+} from 'firefox-profiler/selectors';
+import {
+  getSelectedTab,
+  getTabFilter,
+} from 'firefox-profiler/selectors/url-state';
+import {
+  getTabToThreadIndexesMap,
+  getThreadActivityScores,
+} from 'firefox-profiler/selectors/profile';
+import {
+  withHistoryReplaceStateAsync,
+  withHistoryReplaceStateSync,
+  stateFromLocation,
+  ensureIsValidDataSource,
+} from 'firefox-profiler/app-logic/url-handling';
+import { tabsShowingSampleData } from 'firefox-profiler/app-logic/tabs-handling';
+import {
+  initializeLocalTrackOrderByPid,
+  computeLocalTracksByPid,
+  computeGlobalTracks,
+  initializeGlobalTrackOrder,
+  initializeSelectedThreadIndex,
+  tryInitializeHiddenTracksLegacy,
+  tryInitializeHiddenTracksFromUrl,
+  computeDefaultHiddenTracks,
+  getVisibleThreads,
+} from 'firefox-profiler/profile-logic/tracks';
+import { setDataSource } from './profile-view';
+import { fatalError } from './errors';
+import { PROFILER_URL_REQUIRED_ROOT } from 'firefox-profiler/app-logic/constants';
+import { batchLoadDataUrlIcons } from './icons';
+import {
+  determineTimelineType,
+  hasUsefulSamples,
+} from 'firefox-profiler/profile-logic/profile-data';
+import { doSourceMapSymbolication } from './source-map-symbolication';
+import type { SourceMapSymbolicationResult } from './source-map-symbolication';
+
+import type { SourceMap } from 'firefox-profiler/profile-logic/source-maps/store';
+import type {
+  RequestedLib,
+  ImplementationFilter,
+  TransformStacksPerThread,
+  Action,
+  ThunkAction,
+  Dispatch,
+  Profile,
+  ThreadIndex,
+  TabID,
+  PageList,
+  MixedObject,
+  IndexIntoSourceTable,
+} from 'firefox-profiler/types';
+
+import type { SymbolicationStepInfo } from '../profile-logic/symbolication';
+import { assertExhaustiveCheck } from '../utils/types';
+import { bytesToBase64DataUrl } from 'firefox-profiler/utils/base64';
+import type {
+  BrowserConnection,
+  BrowserConnectionStatus,
+} from '../app-logic/browser-connection';
+import type {
+  AddressResult,
+  LibSymbolicationRequest,
+  LibSymbolicationResponse,
+  SymbolProvider,
+} from '../profile-logic/symbol-store';
+import type { SymbolTableAsTuple } from 'firefox-profiler/profile-logic/symbol-store-db';
+import SymbolStoreDB from 'firefox-profiler/profile-logic/symbol-store-db';
+import type { ProfileUpgradeInfo } from 'firefox-profiler/profile-logic/processed-profile-versioning';
+
+/**
+ * This file collects all the actions that are used for receiving the profile in the
+ * client and getting it into the processed format.
+ */
+
+export function triggerLoadingFromUrl(profileUrl: string): Action {
+  return {
+    type: 'TRIGGER_LOADING_FROM_URL',
+    profileUrl,
+  };
+}
+
+export function waitingForProfileFromBrowser(): Action {
+  return {
+    type: 'WAITING_FOR_PROFILE_FROM_BROWSER',
+  };
+}
+
+/**
+ * Call this function once the profile has been fetched and pre-processed from whatever
+ * source (url, browser, file, etc).
+ */
+export function loadProfile(
+  profile: Profile,
+  config: Partial<{
+    pathInZipFile: string;
+    implementationFilter: ImplementationFilter;
+    transformStacks: TransformStacksPerThread;
+    browserConnection: BrowserConnection | null;
+    skipSymbolication: boolean; // Please use this in tests only.
+  }> = {},
+  initialLoad: boolean = false
+): ThunkAction<Promise<void>> {
+  return async (dispatch) => {
+    if (profile.threads.length === 0) {
+      console.error('This profile has no threads.', profile);
+      dispatch(
+        fatalError(
+          new Error(
+            'No threads were captured in this profile, there is nothing to display.'
+          )
+        )
+      );
+      return;
+    }
+
+    // We have a 'PROFILE_LOADED' dispatch here and a second dispatch for
+    // `finalizeProfileView`. Normally this is an anti-pattern but that was
+    // necessary for initial load url handling. We are not dispatching
+    // `finalizeProfileView` here if it's initial load, instead are getting the
+    // url, upgrading the url and then creating a UrlState that we can use
+    // first. That is necessary because we need a UrlState inside `finalizeProfileView`.
+    // If this is not the initial load, we are dispatching both of them.
+    dispatch({
+      type: 'PROFILE_LOADED',
+      profile,
+      pathInZipFile: config.pathInZipFile ?? null,
+      implementationFilter: config.implementationFilter ?? null,
+      transformStacks: config.transformStacks ?? null,
+    });
+
+    // During initial load, we are upgrading the URL and generating the UrlState
+    // before finalizing profile view. That's why we are dispatching this action
+    // after completing those steps inside `setupInitialUrlState`.
+    if (initialLoad === false) {
+      await dispatch(
+        finalizeProfileView(
+          config.browserConnection ?? null,
+          config.skipSymbolication
+        )
+      );
+    }
+  };
+}
+
+/**
+ * This function will take the view information from the URL, such as hiding and sorting
+ * information, and it will validate it against the profile. If there is no pre-existing
+ * view information, this function will compute the defaults. There is a decent amount of
+ * complexity to making all of these decisions, which has been collected in a bunch of
+ * functions in the src/profile-logic/tracks.js file.
+ *
+ * Note: skipSymbolication is used in tests only, this is enforced.
+ */
+export function finalizeProfileView(
+  browserConnection: BrowserConnection | null = null,
+  skipSymbolication?: boolean
+): ThunkAction<Promise<void>> {
+  return async (dispatch, getState) => {
+    if (skipSymbolication && process.env.NODE_ENV !== 'test') {
+      throw new Error('Please do not use skipSymbolication outside of tests');
+    }
+
+    const profile = getProfileOrNull(getState());
+    if (profile === null || getView(getState()).phase !== 'PROFILE_LOADED') {
+      // Profile load was not successful. Do not continue.
+      return;
+    }
+
+    // The selectedThreadIndex is only null for new profiles that haven't
+    // been seen before. If it's non-null, then there is profile view information
+    // encoded into the URL.
+    const selectedThreadIndexes = getSelectedThreadIndexesOrNull(getState());
+    const pages = profile.pages;
+
+    dispatch(finalizeFullProfileView(profile, selectedThreadIndexes));
+
+    let faviconsPromise = null;
+    if (browserConnection && pages && pages.length > 0) {
+      faviconsPromise = retrievePageFaviconsFromBrowser(
+        dispatch,
+        pages,
+        browserConnection
+      );
+    }
+
+    // Note we kick off symbolication only for the profiles we know for sure
+    // that they weren't symbolicated.
+    // We can skip the symbolication in tests if needed.
+    let symbolicationPromise = null;
+    if (!skipSymbolication && profile.meta.symbolicated === false) {
+      const symbolStore = getSymbolStore(
+        dispatch,
+        getSymbolServerUrl(getState()),
+        browserConnection
+      );
+      if (symbolStore) {
+        // Only symbolicate if a symbol store is available. In tests we may not
+        // have access to IndexedDB.
+        symbolicationPromise = doSymbolicateProfile(
+          dispatch,
+          profile,
+          symbolStore
+        );
+      }
+    }
+
+    // Fetch source maps for all JS sources with a sourceMapURL, then run the
+    // source-map worker. Runs fully in parallel with native symbolication:
+    // native only touches funcs/frames belonging to library resources (JS
+    // funcs aren't in those sets), and the JS apply step reads current
+    // shared state at dispatch time so it composes with whatever native
+    // has committed by then. Requires WebChannel version 7+.
+    let sourceMapSymbolicationPromise: Promise<SourceMapSymbolicationResult> | null =
+      null;
+    if (browserConnection !== null && browserConnection.supportsGetSourceMap) {
+      sourceMapSymbolicationPromise = doResolveSourceMaps(
+        profile,
+        browserConnection,
+        dispatch
+      ).then(({ resolvedSourceMaps, compiledSources }) =>
+        dispatch(doSourceMapSymbolication(resolvedSourceMaps, compiledSources))
+      );
+    }
+
+    await Promise.all([
+      faviconsPromise,
+      symbolicationPromise,
+      sourceMapSymbolicationPromise,
+    ]);
+  };
+}
+
+/**
+ * Finalize the profile state for full view.
+ * This function will take the view information from the URL, such as hiding and sorting
+ * information, and it will validate it against the profile. If there is no pre-existing
+ * view information, this function will compute the defaults.
+ */
+export function finalizeFullProfileView(
+  profile: Profile,
+  maybeSelectedThreadIndexes: Set<ThreadIndex> | null
+): ThunkAction<void> {
+  return (dispatch, getState) => {
+    const hasUrlInfo = maybeSelectedThreadIndexes !== null;
+
+    const tabToThreadIndexesMap = getTabToThreadIndexesMap(getState());
+    const tabFilter = hasUrlInfo ? getTabFilter(getState()) : null;
+    const globalTracks = computeGlobalTracks(
+      profile,
+      tabFilter,
+      tabToThreadIndexesMap
+    );
+    const localTracksByPid = computeLocalTracksByPid(profile, globalTracks);
+
+    const threadActivityScores = getThreadActivityScores(getState());
+    const legacyThreadOrder = getLegacyThreadOrder(getState());
+    const globalTrackOrder = initializeGlobalTrackOrder(
+      globalTracks,
+      hasUrlInfo ? getGlobalTrackOrder(getState()) : null,
+      legacyThreadOrder,
+      threadActivityScores
+    );
+    const localTrackOrderByPid = initializeLocalTrackOrderByPid(
+      hasUrlInfo ? getLocalTrackOrderByPid(getState()) : null,
+      localTracksByPid,
+      legacyThreadOrder,
+      profile
+    );
+
+    const tracksWithOrder = {
+      globalTracks,
+      globalTrackOrder,
+      localTracksByPid,
+      localTrackOrderByPid,
+    };
+
+    let hiddenTracks = null;
+
+    // For non-initial profile loads, initialize the set of hidden tracks from
+    // information in the URL.
+    const legacyHiddenThreads = getLegacyHiddenThreads(getState());
+    if (legacyHiddenThreads !== null) {
+      hiddenTracks = tryInitializeHiddenTracksLegacy(
+        tracksWithOrder,
+        legacyHiddenThreads,
+        profile
+      );
+    } else if (hasUrlInfo) {
+      hiddenTracks = tryInitializeHiddenTracksFromUrl(
+        tracksWithOrder,
+        getHiddenGlobalTracks(getState()),
+        getHiddenLocalTracksByPid(getState())
+      );
+    }
+
+    if (hiddenTracks === null) {
+      // Compute a default set of hidden tracks.
+      // This is the case for the initial profile load.
+      // We also get here if the URL info was ignored, for example if
+      // respecting it would have caused all threads to become hidden.
+      const includeParentProcessThreads = tabFilter === null;
+      hiddenTracks = computeDefaultHiddenTracks(
+        tracksWithOrder,
+        profile,
+        threadActivityScores,
+        // Only include the parent process if there is no tab filter applied.
+        includeParentProcessThreads
+      );
+    }
+
+    const selectedThreadIndexes = initializeSelectedThreadIndex(
+      maybeSelectedThreadIndexes,
+      getVisibleThreads(tracksWithOrder, hiddenTracks),
+      profile,
+      threadActivityScores
+    );
+
+    let timelineType = null;
+    if (!hasUrlInfo) {
+      timelineType = determineTimelineType(profile);
+    }
+
+    // If the currently selected tab is only visible when the selected track
+    // has samples, verify that the selected track has samples, and if not
+    // select the marker chart.
+    let selectedTab = getSelectedTab(getState());
+    if (tabsShowingSampleData.includes(selectedTab)) {
+      let hasSamples = false;
+      for (const threadIndex of selectedThreadIndexes) {
+        const thread = profile.threads[threadIndex];
+        const { samples, jsAllocations, nativeAllocations } = thread;
+        hasSamples = [samples, jsAllocations, nativeAllocations].some((table) =>
+          hasUsefulSamples(table?.stack, profile.shared)
+        );
+        if (hasSamples) {
+          break;
+        }
+      }
+      if (!hasSamples) {
+        selectedTab = 'marker-chart';
+      }
+    }
+
+    withHistoryReplaceStateSync(() => {
+      dispatch({
+        type: 'VIEW_FULL_PROFILE',
+        selectedThreadIndexes,
+        selectedTab,
+        globalTracks,
+        globalTrackOrder,
+        localTracksByPid,
+        localTrackOrderByPid,
+        timelineType,
+        ...hiddenTracks,
+      });
+    });
+  };
+}
+
+/**
+ * Symbolication normally happens when a profile is first loaded. This function
+ * provides the ability to kick off symbolication again after it has already been
+ * attempted once.
+ */
+export function resymbolicateProfile(): ThunkAction<Promise<void>> {
+  return async (dispatch, getState) => {
+    const symbolStore = getSymbolStore(
+      dispatch,
+      getSymbolServerUrl(getState()),
+      getBrowserConnection(getState())
+    );
+    const profile = getProfile(getState());
+    if (!symbolStore) {
+      throw new Error(
+        'There was no symbol store when attempting to re-symbolicate.'
+      );
+    }
+    await doSymbolicateProfile(
+      dispatch,
+      profile,
+      symbolStore,
+      /* ignoreCache */ true
+    );
+  };
+}
+
+// Previously `loadProfile` and `finalizeProfileView` functions were a single
+// function called `viewProfile`. Then we had to split it because of the changes
+// of url/profile loading mechanism. We kept the `viewProfile` function with the
+// same functionality as previous `viewProfile` because many of the tests use this.
+// This function will simply call `loadProfile` (and `finalizeProfileView` inside
+// `loadProfile`) and wait until symbolication finishes.
+export function viewProfile(
+  profile: Profile,
+  config: Partial<{
+    pathInZipFile: string;
+    implementationFilter: ImplementationFilter;
+    transformStacks: TransformStacksPerThread;
+    skipSymbolication: boolean;
+    browserConnection: BrowserConnection | null;
+  }> = {}
+): ThunkAction<Promise<void>> {
+  return async (dispatch) => {
+    await dispatch(loadProfile(profile, config, false));
+  };
+}
+
+export function requestingSymbolTable(requestedLib: RequestedLib): Action {
+  return {
+    type: 'REQUESTING_SYMBOL_TABLE',
+    requestedLib,
+  };
+}
+
+export function receivedSymbolTableReply(requestedLib: RequestedLib): Action {
+  return {
+    type: 'RECEIVED_SYMBOL_TABLE_REPLY',
+    requestedLib,
+  };
+}
+
+export function startSymbolicating(): Action {
+  return {
+    type: 'START_SYMBOLICATING',
+  };
+}
+
+export function doneSymbolicating(): Action {
+  return { type: 'DONE_SYMBOLICATING' };
+}
+
+// Apply all the individual "symbolication steps" from symbolicationStepsPerThread
+// to the current profile, as one redux action.
+// We combine steps into one redux action in order to avoid unnecessary renders.
+// When symbolication results arrive, we often get a very high number of individual
+// symbolication updates. If we dispatched all of them as individual redux actions,
+// we would cause React to re-render synchronously for each action, and the profile
+// selectors called from rendering would do expensive work, most of which would never
+// reach the screen because it would be invalidated by the next symbolication update.
+// So we queue up symbolication steps and run the update from requestIdleCallback.
+export function bulkProcessSymbolicationSteps(
+  symbolicationSteps: SymbolicationStepInfo[]
+): ThunkAction<void> {
+  return (dispatch, getState) => {
+    const { threads, shared } = getProfile(getState());
+    const {
+      threads: symbolicatedThreads,
+      shared: symbolicatedShared,
+      oldFuncToNewFuncsMap,
+    } = applySymbolicationSteps(threads, shared, symbolicationSteps);
+    dispatch({
+      type: 'BULK_SYMBOLICATION',
+      oldFuncToNewFuncsMap,
+      symbolicatedThreads,
+      symbolicatedShared,
+    });
+  };
+}
+
+let requestIdleCallbackPolyfill: (
+  callback: () => void,
+  _opts?: { timeout: number }
+) => void;
+
+if (typeof window === 'object' && window.requestIdleCallback) {
+  requestIdleCallbackPolyfill = window.requestIdleCallback;
+} else if (typeof process === 'object' && process.nextTick) {
+  // Node environment
+  requestIdleCallbackPolyfill = process.nextTick;
+} else {
+  requestIdleCallbackPolyfill = (callback) => setTimeout(callback, 0);
+}
+
+// Queues up symbolication steps and bulk-processes them from requestIdleCallback,
+// in order to improve UI responsiveness during symbolication.
+class SymbolicationStepQueue {
+  _updates: SymbolicationStepInfo[];
+  _updateObservers: Array<() => void>;
+  _requestedUpdate: boolean;
+
+  constructor() {
+    this._updates = [];
+    this._updateObservers = [];
+    this._requestedUpdate = false;
+  }
+
+  _scheduleUpdate(dispatch: Dispatch) {
+    // Only request an update if one hasn't already been scheduled.
+    if (!this._requestedUpdate) {
+      requestIdleCallbackPolyfill(() => this._dispatchUpdate(dispatch), {
+        timeout: 2000,
+      });
+      this._requestedUpdate = true;
+    }
+  }
+
+  _dispatchUpdate(dispatch: Dispatch) {
+    const updates = this._updates;
+    const observers = this._updateObservers;
+    this._updates = [];
+    this._updateObservers = [];
+    this._requestedUpdate = false;
+
+    dispatch(bulkProcessSymbolicationSteps(updates));
+
+    for (const observer of observers) {
+      observer();
+    }
+  }
+
+  enqueueSingleSymbolicationStep(
+    dispatch: Dispatch,
+    symbolicationStepInfo: SymbolicationStepInfo,
+    completionHandler: () => void
+  ) {
+    this._scheduleUpdate(dispatch);
+    this._updates.push(symbolicationStepInfo);
+    this._updateObservers.push(completionHandler);
+  }
+}
+
+const _symbolicationStepQueueSingleton = new SymbolicationStepQueue();
+
+/**
+ * If the profile object we got from the browser is an ArrayBuffer, convert it
+ * to a gecko profile object by parsing the JSON.
+ */
+async function _unpackGeckoProfileFromBrowser(
+  profile: ArrayBuffer | MixedObject
+): Promise<unknown> {
+  // Note: the following check will work for array buffers coming from another
+  // global. This happens especially with tests but could happen in the future
+  // in Firefox too.
+  if (Object.prototype.toString.call(profile) === '[object ArrayBuffer]') {
+    return extractJsonFromArrayBuffer(profile as ArrayBuffer);
+  }
+  return profile;
+}
+
+function getSymbolStore(
+  dispatch: Dispatch,
+  symbolServerUrl: string,
+  browserConnection: BrowserConnection | null
+): SymbolStore | null {
+  if (typeof window === 'undefined' || !window.indexedDB) {
+    // We could be running in a test environment or Node.js with no indexedDB support.
+    // Do not return a symbol store in this case.
+    return null;
+  }
+
+  // Note, the database name still references the old project name, "perf.html". It was
+  // left the same as to not invalidate user's information.
+  const symbolProvider = new RegularSymbolProvider(
+    'perf-html-async-storage',
+    dispatch,
+    symbolServerUrl,
+    browserConnection
+  );
+  return new SymbolStore(symbolProvider);
+}
+
+type DemangleFunction = (name: string) => string;
+
+/**
+ * The regular implementation of the SymbolProvider interface: Symbols are requested
+ * from a server via fetch, and from the browser via a BrowserConnection (if present).
+ * State changes are notified via redux actions to the provided `dispatch` function.
+ */
+class RegularSymbolProvider implements SymbolProvider {
+  _dispatch: Dispatch;
+  _symbolServerUrl: string;
+  _browserConnection: BrowserConnection | null;
+  _symbolDb: SymbolStoreDB;
+  _demangleCallback: DemangleFunction | null = null;
+
+  constructor(
+    dbNamePrefix: string,
+    dispatch: Dispatch,
+    symbolServerUrl: string,
+    browserConnection: BrowserConnection | null
+  ) {
+    this._dispatch = dispatch;
+    this._symbolServerUrl = symbolServerUrl;
+    this._browserConnection = browserConnection;
+    this._symbolDb = new SymbolStoreDB(`${dbNamePrefix}-symbol-tables`);
+  }
+
+  async _makeSymbolicationAPIRequestWithCallback(
+    symbolSupplierName: string,
+    requests: LibSymbolicationRequest[],
+    callback: (path: string, requestJson: string) => Promise<unknown>
+  ) {
+    for (const { lib } of requests) {
+      this._dispatch(requestingSymbolTable(lib));
+    }
+    try {
+      return await MozillaSymbolicationAPI.requestSymbols(
+        symbolSupplierName,
+        requests,
+        callback
+      );
+    } catch (e) {
+      throw new Error(
+        `There was a problem with the symbolication API request to the ${symbolSupplierName}: ${e.message}`
+      );
+    } finally {
+      for (const { lib } of requests) {
+        this._dispatch(receivedSymbolTableReply(lib));
+      }
+    }
+  }
+
+  requestSymbolsFromServer(
+    requests: LibSymbolicationRequest[]
+  ): Promise<LibSymbolicationResponse[]> {
+    return this._makeSymbolicationAPIRequestWithCallback(
+      'symbol server',
+      requests,
+      async (path, json) => {
+        const response = await fetch(this._symbolServerUrl + path, {
+          body: json,
+          method: 'POST',
+          mode: 'cors',
+          // Use a profiler-specific user agent, so that the symbolication server knows
+          // what's making this request.
+          headers: new Headers({
+            'User-Agent': `FirefoxProfiler/1.0 (+${location.origin})`,
+          }),
+        });
+        return response.json();
+      }
+    );
+  }
+
+  async requestSymbolsFromBrowser(
+    requests: LibSymbolicationRequest[]
+  ): Promise<LibSymbolicationResponse[]> {
+    if (this._browserConnection === null) {
+      console.warn(
+        'No connection to the browser, cannot run querySymbolicationApi'
+      );
+      return [];
+    }
+
+    const bc = this._browserConnection;
+    return this._makeSymbolicationAPIRequestWithCallback(
+      'browser',
+      requests,
+      async (path, json) =>
+        JSON.parse(await bc.querySymbolicationApi(path, json))
+    );
+  }
+
+  /**
+   * This function returns a function that can demangle function name using a
+   * WebAssembly module, but falls back on the identity function if the
+   * WebAssembly module isn't available for some reason.
+   */
+  async _createDemangleCallback(): Promise<DemangleFunction> {
+    try {
+      // When this module imports some WebAssembly module, the bundler's mechanism
+      // invokes the WebAssembly object which might be absent in some browsers,
+      // therefore `import` can throw. Also some browsers might refuse to load a
+      // wasm module because of our CSP.
+      const { demangle_any } = await import('gecko-profiler-demangle');
+      return demangle_any;
+    } catch (error) {
+      // Module loading can fail (for example in browsers without WebAssembly
+      // support, or due to bad server configuration), so we will fall back
+      // to a pass-through function if that happens.
+      console.error('Demangling module could not be imported.', error);
+      return (mangledString) => mangledString;
+    }
+  }
+
+  async _getDemangleCallback(): Promise<DemangleFunction> {
+    return (this._demangleCallback ??= await this._createDemangleCallback());
+  }
+
+  // Try to get individual symbol tables from the browser, for any libraries
+  // which couldn't be symbolicated with the symbolication API.
+  // This is needed for two cases:
+  //  1. Firefox 95 and earlier, which didn't have a querySymbolicationApi
+  //     WebChannel access point, and only supports symbol tables.
+  //  2. Android system libraries, even in modern versions of Firefox. We don't
+  //     support querySymbolicationApi for them yet, see
+  //     https://bugzilla.mozilla.org/show_bug.cgi?id=1735897
+  async requestSymbolsViaSymbolTableFromBrowser(
+    request: LibSymbolicationRequest,
+    ignoreCache: boolean
+  ): Promise<Map<number, AddressResult>> {
+    // Check this._symbolDb first, and then call this._getSymbolTablesFromBrowser
+    // if we couldn't find the table in the cache.
+
+    // We also need a demangling function for this, which is in an async module.
+    const demangleCallback = await this._getDemangleCallback();
+
+    const { lib, addresses } = request;
+    const { debugName, breakpadId } = lib;
+    let symbolTable = null;
+
+    if (!ignoreCache) {
+      // Try to get the symbol table from the database.
+      // This call will return null if the symbol table is not present.
+      symbolTable = await this._symbolDb.getSymbolTable(debugName, breakpadId);
+    }
+
+    if (symbolTable === null) {
+      symbolTable = await this._requestSymbolTableFromBrowser(lib);
+      this._storeSymbolTableInDB(lib, symbolTable);
+    }
+
+    return readSymbolsFromSymbolTable(addresses, symbolTable, demangleCallback);
+  }
+
+  async _requestSymbolTableFromBrowser(
+    lib: RequestedLib
+  ): Promise<SymbolTableAsTuple> {
+    if (this._browserConnection === null) {
+      throw new Error(
+        'No connection to the browser, cannot obtain symbol tables'
+      );
+    }
+
+    const { debugName, breakpadId } = lib;
+    this._dispatch(requestingSymbolTable(lib));
+    try {
+      const symbolTable = await this._browserConnection.getSymbolTable(
+        debugName,
+        breakpadId
+      );
+      this._dispatch(receivedSymbolTableReply(lib));
+      return symbolTable;
+    } catch (error) {
+      this._dispatch(receivedSymbolTableReply(lib));
+      throw error;
+    }
+  }
+
+  // Store a symbol table in the database. This is only used for symbol tables
+  // and not for partial symbol results. Symbol tables are obtained from the
+  // browser via the geckoProfiler object which is defined in a frame script:
+  // https://searchfox.org/mozilla-central/rev/a9db89754fb507254cb8422e5a00af7c10d98264/devtools/client/performance-new/frame-script.js#67-81
+  //
+  // We do not store results from the Mozilla symbolication API, because those
+  // only contain the symbols we requested and not all the symbols of a given
+  // library.
+  async _storeSymbolTableInDB(
+    lib: RequestedLib,
+    symbolTable: SymbolTableAsTuple
+  ): Promise<void> {
+    const { debugName, breakpadId } = lib;
+    try {
+      await this._symbolDb.storeSymbolTable(debugName, breakpadId, symbolTable);
+    } catch (error) {
+      console.log(
+        `Failed to store the symbol table for ${debugName} in the database:`,
+        error
+      );
+    }
+  }
+}
+
+export async function doSymbolicateProfile(
+  dispatch: Dispatch,
+  profile: Profile,
+  symbolStore: SymbolStore,
+  ignoreCache?: boolean
+) {
+  dispatch(startSymbolicating());
+
+  const completionPromises: Promise<unknown>[] = [];
+
+  await symbolicateProfile(
+    profile,
+    symbolStore,
+    (symbolicationStepInfo: SymbolicationStepInfo) => {
+      completionPromises.push(
+        new Promise((resolve) => {
+          _symbolicationStepQueueSingleton.enqueueSingleSymbolicationStep(
+            dispatch,
+            symbolicationStepInfo,
+            () => resolve(undefined)
+          );
+        })
+      );
+    },
+    ignoreCache
+  );
+
+  await Promise.all(completionPromises);
+
+  dispatch(doneSymbolicating());
+}
+
+/**
+ * Resolve JS source maps for every source in the profile that has both a
+ * sourceMapURL and a UUID. Fetches source maps via the browser WebChannel.
+ *
+ * Also fetches the compiled source text which is required by the scope-tree
+ * name resolution in symbolicateWithSourceMaps.
+ */
+async function doResolveSourceMaps(
+  profile: Profile,
+  browserConnection: BrowserConnection,
+  dispatch: Dispatch
+): Promise<{
+  resolvedSourceMaps: Map<IndexIntoSourceTable, SourceMap>;
+  compiledSources: Map<IndexIntoSourceTable, string>;
+}> {
+  const { sources, stringArray } = profile.shared;
+
+  // Collect every source with a sourceMapURL and a UUID. Only UUID-bearing
+  // sources can be fetched via the browser WebChannel.
+  const sourceIndexesWithSourceMaps = new Set<IndexIntoSourceTable>();
+  for (let sourceIndex = 0; sourceIndex < sources.length; sourceIndex++) {
+    if (
+      sources.sourceMapURL[sourceIndex] !== null &&
+      sources.sourceMapURL[sourceIndex] !== undefined &&
+      typeof sources.id[sourceIndex] === 'string'
+    ) {
+      sourceIndexesWithSourceMaps.add(sourceIndex);
+    }
+  }
+
+  if (sourceIndexesWithSourceMaps.size === 0) {
+    return { resolvedSourceMaps: new Map(), compiledSources: new Map() };
+  }
+
+  // Fetch source maps and compiled sources in parallel, ignoring individual failures.
+  const resolvedSourceMaps: Map<IndexIntoSourceTable, SourceMap> = new Map();
+  const compiledSources: Map<IndexIntoSourceTable, string> = new Map();
+
+  dispatch({ type: 'START_SOURCE_MAP_FETCHING' });
+  try {
+    await Promise.all(
+      Array.from(sourceIndexesWithSourceMaps).map(async (sourceIndex) => {
+        const filename = stringArray[sources.filename[sourceIndex]];
+        // sourceId is guaranteed non-null by the filter above.
+        const sourceId = sources.id[sourceIndex] as string;
+
+        await Promise.all([
+          browserConnection
+            .getSourceMap(sourceId)
+            .then((result) => {
+              resolvedSourceMaps.set(sourceIndex, result);
+            })
+            .catch((e) => {
+              console.warn(
+                `Failed to fetch source map for "${filename}" (id=${sourceId}):`,
+                e
+              );
+            }),
+          browserConnection
+            .getJSSource(sourceId)
+            .then((text) => {
+              compiledSources.set(sourceIndex, text);
+            })
+            .catch((e) => {
+              console.warn(
+                `Failed to fetch compiled source for "${filename}" (id=${sourceId}):`,
+                e
+              );
+            }),
+        ]);
+      })
+    );
+  } finally {
+    dispatch({ type: 'DONE_SOURCE_MAP_FETCHING' });
+  }
+
+  return { resolvedSourceMaps, compiledSources };
+}
+
+export async function retrievePageFaviconsFromBrowser(
+  dispatch: Dispatch,
+  pages: PageList,
+  browserConnection: BrowserConnection
+) {
+  const newPages = [...pages];
+
+  const favicons = await browserConnection.getPageFavicons(
+    newPages.map((p) => p.url)
+  );
+
+  if (newPages.length !== favicons.length) {
+    // It appears that an error occurred since the pages and favicons arrays
+    // have different lengths. Return early without doing anything. The favicons
+    // array will be empty if Firefox doesn't support this webchannel request.
+    return;
+  }
+
+  // Convert binary favicon data into data urls.
+  const faviconDataStringPromises: Array<Promise<string | null>> = favicons.map(
+    (faviconData) => {
+      if (!faviconData) {
+        return Promise.resolve(null);
+      }
+      return bytesToBase64DataUrl(faviconData.data, faviconData.mimeType);
+    }
+  );
+
+  const faviconDataUrls = await Promise.all(faviconDataStringPromises);
+
+  for (let index = 0; index < favicons.length; index++) {
+    if (faviconDataUrls[index]) {
+      newPages[index] = {
+        ...newPages[index],
+        favicon: faviconDataUrls[index],
+      };
+    }
+  }
+
+  // Once we update the pages, we can also start loading the data urls.
+  dispatch(batchLoadDataUrlIcons(faviconDataUrls));
+  dispatch({
+    type: 'UPDATE_PAGES',
+    newPages,
+  });
+}
+
+// From a BrowserConnectionStatus, this unwraps the included browserConnection
+// when possible.
+export function unwrapBrowserConnection(
+  browserConnectionStatus: BrowserConnectionStatus
+): BrowserConnection {
+  switch (browserConnectionStatus.status) {
+    case 'ESTABLISHED':
+      // Good. This is the normal case.
+      break;
+    // The other cases are error cases.
+    case 'NOT_FIREFOX':
+      throw new Error('/from-browser only works in Firefox browsers');
+    case 'NO_ATTEMPT':
+      throw new Error(
+        'retrieveProfileFromBrowser should never be called while browserConnectionStatus is NO_ATTEMPT'
+      );
+    case 'WAITING':
+      throw new Error(
+        'retrieveProfileFromBrowser should never be called while browserConnectionStatus is WAITING'
+      );
+    case 'DENIED':
+      throw browserConnectionStatus.error;
+    case 'TIMED_OUT':
+      throw new Error('Timed out when waiting for reply to WebChannel message');
+    default:
+      throw assertExhaustiveCheck(browserConnectionStatus as never);
+  }
+
+  // Now we know that browserConnectionStatus.status === 'ESTABLISHED'.
+  return browserConnectionStatus.browserConnection;
+}
+
+export function retrieveProfileFromBrowser(
+  browserConnectionStatus: BrowserConnectionStatus,
+  initialLoad: boolean = false
+): ThunkAction<Promise<void>> {
+  return async (dispatch) => {
+    try {
+      const browserConnection = unwrapBrowserConnection(
+        browserConnectionStatus
+      );
+
+      // XXX update state to show that we're connected to the browser
+
+      dispatch(waitingForProfileFromBrowser());
+
+      const rawGeckoProfile = await browserConnection.getProfile({
+        onThirtySecondTimeout: () => {
+          dispatch(
+            temporaryError(
+              new TemporaryError(oneLine`
+                We were unable to connect to the browser within thirty seconds.
+                This might be because the profile is big or your machine is slower than usual.
+                Still waiting...
+              `)
+            )
+          );
+        },
+      });
+      const unpackedProfile =
+        await _unpackGeckoProfileFromBrowser(rawGeckoProfile);
+      const meta = (unpackedProfile as any).meta;
+      if (meta.configuration && meta.configuration.features.includes('power')) {
+        try {
+          await Promise.all([
+            browserConnection
+              .getExternalPowerTracks(
+                meta.startTime + meta.profilingStartTime,
+                meta.startTime + meta.profilingEndTime
+              )
+              .then((tracks) =>
+                insertExternalPowerCountersIntoProfile(
+                  tracks as any,
+                  unpackedProfile as any
+                )
+              ),
+            browserConnection
+              .getExternalMarkers(
+                meta.startTime + meta.profilingStartTime,
+                meta.startTime + meta.profilingEndTime
+              )
+              .then((markers) =>
+                insertExternalMarkersIntoProfile(
+                  markers,
+                  unpackedProfile as any
+                )
+              ),
+          ]);
+        } catch (error) {
+          // Make failures in adding external data non-fatal.
+          console.error(error);
+        }
+      }
+      const profile = processGeckoProfile(unpackedProfile as any);
+      await dispatch(loadProfile(profile, { browserConnection }, initialLoad));
+    } catch (error) {
+      dispatch(fatalError(error));
+      console.error(error);
+    }
+  };
+}
+
+export function waitingForProfileFromStore(): Action {
+  return {
+    type: 'WAITING_FOR_PROFILE_FROM_STORE',
+  };
+}
+
+export function waitingForProfileFromUrl(profileUrl?: string): Action {
+  return {
+    type: 'WAITING_FOR_PROFILE_FROM_URL',
+    profileUrl: profileUrl ?? null,
+  };
+}
+
+export function receiveZipFile(zip: JSZip): Action {
+  return {
+    type: 'RECEIVE_ZIP_FILE',
+    zip,
+  };
+}
+
+export function temporaryError(error: TemporaryError): Action {
+  return {
+    type: 'TEMPORARY_ERROR',
+    error,
+  };
+}
+
+export function retrieveProfileFromStore(
+  hash: string,
+  initialLoad: boolean = false
+): ThunkAction<Promise<ProfileUpgradeInfo>> {
+  return retrieveProfileOrZipFromUrl(getProfileUrlForHash(hash), initialLoad);
+}
+
+/**
+ * Runs a fetch on a URL, and downloads the file. If it's JSON, then it attempts
+ * to process the profile. If it's a zip file, it tries to unzip it, and save it
+ * into the store so that the user can then choose which file to load.
+ */
+export function retrieveProfileOrZipFromUrl(
+  profileUrl: string,
+  initialLoad: boolean = false
+): ThunkAction<Promise<ProfileUpgradeInfo>> {
+  return async function (dispatch) {
+    dispatch(waitingForProfileFromUrl(profileUrl));
+
+    try {
+      const response: ProfileOrZip = await fetchProfile({
+        url: profileUrl,
+        onTemporaryError: (e: TemporaryError) => {
+          dispatch(temporaryError(e));
+        },
+      });
+
+      switch (response.responseType) {
+        case 'BYTES': {
+          const profileUpgradeInfo = {};
+          const profile = await unserializeProfileOfArbitraryFormat(
+            response.bytes,
+            profileUrl,
+            profileUpgradeInfo
+          );
+          if (profile === undefined) {
+            throw new Error('Unable to parse the profile.');
+          }
+
+          await dispatch(loadProfile(profile, {}, initialLoad));
+          return profileUpgradeInfo;
+        }
+        case 'ZIP': {
+          const zip = response.zip;
+          await dispatch(receiveZipFile(zip));
+          return {};
+        }
+        default:
+          throw assertExhaustiveCheck(
+            response as never,
+            'Expected to receive an archive or profile from fetchProfile.'
+          );
+      }
+    } catch (error) {
+      dispatch(fatalError(error));
+      return {};
+    }
+  };
+}
+
+export function waitingForProfileFromFile(): Action {
+  return {
+    type: 'WAITING_FOR_PROFILE_FROM_FILE',
+  };
+}
+
+export function _fileReader(input: File) {
+  const reader = new FileReader();
+  const promise = new Promise((resolve, reject) => {
+    // Flow's definition for FileReader doesn't handle the polymorphic nature of
+    // reader.result very well, as its definition is <string | ArrayBuffer>.
+    // Here we ensure type safety by returning the proper Promise type from the
+    // methods below.
+    reader.onload = () => resolve(reader.result as any);
+    reader.onerror = () => reject(reader.error);
+  });
+
+  return {
+    asText(): Promise<string> {
+      reader.readAsText(input);
+      return promise as Promise<string>;
+    },
+
+    asArrayBuffer(): Promise<ArrayBuffer> {
+      reader.readAsArrayBuffer(input);
+      return promise as Promise<ArrayBuffer>;
+    },
+  };
+}
+
+/**
+ * Multiple file formats are supported. Look at the file type and try and
+ * parse the contents according to its type.
+ */
+export function retrieveProfileFromFile(
+  file: File,
+  browserConnection: BrowserConnection | null,
+  // Allow tests to inject a custom file reader to bypass the DOM APIs.
+  fileReader: typeof _fileReader = _fileReader
+): ThunkAction<Promise<void>> {
+  return async (dispatch) => {
+    // Notify the UI that we are loading and parsing a profile. This can take
+    // a little bit of time.
+    dispatch(waitingForProfileFromFile());
+
+    try {
+      if (deduceContentType(file.name, file.type) === 'application/zip') {
+        // Open a zip file in the zip file viewer
+        const buffer = await fileReader(file).asArrayBuffer();
+        const { default: JSZip } = await import('jszip');
+        const zip = await JSZip.loadAsync(buffer);
+        await dispatch(receiveZipFile(zip));
+      } else {
+        // Profile files can have file names with uncommon extensions
+        // (eg .profile). So we can't rely on the mime type to decide how to
+        // handle them.
+        const arrayBuffer = await fileReader(file).asArrayBuffer();
+
+        const profile = await unserializeProfileOfArbitraryFormat(
+          arrayBuffer,
+          file.name
+        );
+        if (profile === undefined) {
+          throw new Error('Unable to parse the profile.');
+        }
+
+        await withHistoryReplaceStateAsync(async () => {
+          await dispatch(viewProfile(profile, { browserConnection }));
+        });
+      }
+    } catch (error) {
+      dispatch(fatalError(error));
+    }
+  };
+}
+
+/**
+ * View a profile that was injected via a "postMessage". A website can
+ * inject a profile to the profiler.
+ */
+export function viewProfileFromPostMessage(
+  rawProfile: any
+): ThunkAction<Promise<void>> {
+  return async (dispatch) => {
+    try {
+      const profile = await unserializeProfileOfArbitraryFormat(rawProfile);
+      /* istanbul ignore if */
+      if (profile === undefined) {
+        throw new Error('Unable to parse the profile.');
+      }
+
+      await withHistoryReplaceStateAsync(async () => {
+        await dispatch(viewProfile(profile));
+      });
+    } catch (error) {
+      /* istanbul ignore next */
+      dispatch(fatalError(error));
+    }
+  };
+}
+
+// Given a profile view URL, extract the raw URL needed to fetch the profile
+// data. This mirrors the manual pathname splitting done in retrieveProfileForRawUrl,
+// so we can fetch the profile before calling stateFromLocation.
+function getProfileFetchUrl(urlString: string): string {
+  const pathParts = new URL(urlString).pathname.split('/').filter((d) => d);
+  const dataSource = ensureIsValidDataSource(pathParts[0]);
+  switch (dataSource) {
+    case 'public':
+      return getProfileUrlForHash(pathParts[1]);
+    case 'from-url':
+      return decodeURIComponent(pathParts[1]);
+    default:
+      throw new Error(
+        'Only public uploaded profiles are supported by the comparison function.'
+      );
+  }
+}
+
+/**
+ * This action retrieves several profiles and push them into 1 profile using the
+ * information contained in the query.
+ */
+export function retrieveProfilesToCompare(
+  profileViewUrls: string[],
+  initialLoad: boolean = false
+): ThunkAction<Promise<void>> {
+  return async (dispatch) => {
+    dispatch(waitingForProfileFromUrl());
+
+    try {
+      const profilesAndStates = await Promise.all(
+        profileViewUrls.map(async (url) => {
+          if (
+            url.startsWith('https://perfht.ml/') ||
+            url.startsWith('https://share.firefox.dev/') ||
+            url.startsWith('https://bit.ly/') ||
+            url.startsWith(`https://${PROFILER_URL_REQUIRED_ROOT}/`)
+          ) {
+            url = await expandUrl(url);
+          }
+
+          const profileUrl = getProfileFetchUrl(url);
+
+          const response: ProfileOrZip = await fetchProfile({
+            url: profileUrl,
+            onTemporaryError: (e: TemporaryError) => {
+              dispatch(temporaryError(e));
+            },
+          });
+          if (response.responseType !== 'BYTES') {
+            throw new Error(
+              'Expected to receive a single profile (not a zip) from fetchProfile'
+            );
+          }
+
+          const upgradeInfo: ProfileUpgradeInfo = {};
+          const profile = await unserializeProfileOfArbitraryFormat(
+            response.bytes,
+            profileUrl,
+            upgradeInfo
+          );
+
+          const profileState = stateFromLocation(new URL(url), {
+            profile,
+            upgradeInfo,
+          });
+
+          return { profile, profileState };
+        })
+      );
+
+      const profiles = profilesAndStates.map(({ profile }) => profile);
+      const profileStates = profilesAndStates.map(
+        ({ profileState }) => profileState
+      );
+
+      const {
+        profile: resultProfile,
+        implementationFilters,
+        transformStacks,
+      } = mergeProfilesForDiffing(profiles, profileStates);
+
+      // We define an implementationFilter if both profiles agree with the value.
+      let implementationFilter;
+      if (implementationFilters[0] === implementationFilters[1]) {
+        implementationFilter = implementationFilters[0];
+      }
+
+      await dispatch(
+        loadProfile(
+          resultProfile,
+          {
+            transformStacks,
+            implementationFilter,
+          },
+          initialLoad
+        )
+      );
+    } catch (error) {
+      dispatch(fatalError(error));
+    }
+  };
+}
+
+export type ProfileAndProfileUpgradeInfo = {
+  profile: Profile;
+  upgradeInfo: ProfileUpgradeInfo;
+};
+
+// This function takes location(most probably `window.location`) as parameter
+// and loads the profile in that given location, then returns the profile data.
+// This function is being used to get the initial profile data before upgrading
+// the url and processing the UrlState.
+// `profileUpgradeInfo` is an outparam that will be popuplated by this function.
+export function retrieveProfileForRawUrl(
+  location: Location,
+  browserConnectionStatus?: BrowserConnectionStatus
+): ThunkAction<Promise<ProfileAndProfileUpgradeInfo | null>> {
+  return async (dispatch, getState) => {
+    const pathParts = location.pathname.split('/').filter((d) => d);
+    let possibleDataSource = pathParts[0];
+
+    // Treat from-addon as from-browser, for compatibility with Firefox < 93.
+    if (possibleDataSource === 'from-addon') {
+      possibleDataSource = 'from-browser';
+    }
+
+    let dataSource = ensureIsValidDataSource(possibleDataSource);
+    // Redirect to 'none' for from-file and unpublished data sources since initial
+    // urls can't be 'from-file' or 'unpublished' and need to be redirected to
+    // home page. 'unpublished' is a transient state after profile deletion.
+    if (dataSource === 'from-file' || dataSource === 'unpublished') {
+      dataSource = 'none';
+    }
+    dispatch(setDataSource(dataSource));
+
+    let profileUpgradeInfo = {};
+
+    switch (dataSource) {
+      case 'from-browser': {
+        if (browserConnectionStatus === undefined) {
+          throw new Error(
+            'Error: all callers of this function should supply a browserConnectionStatus argument for from-browser'
+          );
+        }
+        await dispatch(
+          retrieveProfileFromBrowser(browserConnectionStatus, true)
+        );
+        break;
+      }
+      case 'public':
+        profileUpgradeInfo = await dispatch(
+          retrieveProfileFromStore(pathParts[1], true)
+        );
+        break;
+      case 'from-url':
+        profileUpgradeInfo = await dispatch(
+          retrieveProfileOrZipFromUrl(decodeURIComponent(pathParts[1]), true)
+        );
+        break;
+      case 'compare': {
+        const query = queryString.parse(location.search.substr(1), {
+          arrayFormat: 'bracket', // This uses parameters with brackets for arrays.
+        });
+        if (Array.isArray(query.profiles)) {
+          await dispatch(
+            retrieveProfilesToCompare(
+              query.profiles.filter((p): p is string => p !== null),
+              true
+            )
+          );
+        }
+        break;
+      }
+      case 'from-post-message': {
+        window.addEventListener('message', (event) => {
+          const { data } = event;
+          console.log(`Received postMessage`, data);
+          /* istanbul ignore if */
+          if (!data || typeof data !== 'object') {
+            return;
+          }
+          switch (data.name) {
+            case 'inject-profile':
+              dispatch(viewProfileFromPostMessage(data.profile));
+              break;
+            case 'ready:request': {
+              // The "inject-profile" event could be coming from a variety of locations.
+              // It could come from a `window.open` call on another page. It could come
+              // from an addon. It could come from being embedded in an iframe. In order
+              // to generically support these cases allow the opener to poll for the
+              // "ready:response" message.
+              console.log(
+                'Responding via postMessage that the profiler is ready.'
+              );
+              const otherWindow = event.source ?? window;
+              (otherWindow as any).postMessage({ name: 'ready:response' }, '*');
+              break;
+            }
+            default:
+              /* istanbul ignore next */
+              console.log('Unknown post message', data);
+          }
+        });
+        break;
+      }
+      case 'uploaded-recordings':
+      case 'none':
+      case 'local':
+        // There is no profile to download for these datasources.
+        break;
+      default:
+        throw assertExhaustiveCheck(
+          dataSource,
+          `Unknown dataSource ${dataSource}.`
+        );
+    }
+
+    // Profile may be null if the response was a zip file.
+    const profileOrNull = getProfileOrNull(getState());
+    if (profileOrNull === null) {
+      return null;
+    }
+
+    return { profile: profileOrNull, upgradeInfo: profileUpgradeInfo };
+  };
+}
+
+/**
+ * Change the selected browser tab filter for the profile.
+ * TabID here means the unique ID for a give browser tab and corresponds to
+ * multiple pages in the `profile.pages` array.
+ * If it's null it will undo the filter and will show the full profile.
+ */
+export function changeTabFilter(tabID: TabID | null): ThunkAction<void> {
+  return (dispatch, getState) => {
+    const profile = getProfile(getState());
+    const tabToThreadIndexesMap = getTabToThreadIndexesMap(getState());
+    // Compute the global tracks, they will be filtered by tabID if it's
+    // non-null and will not filter if it's null.
+    const globalTracks = computeGlobalTracks(
+      profile,
+      tabID,
+      tabToThreadIndexesMap
+    );
+    const localTracksByPid = computeLocalTracksByPid(profile, globalTracks);
+
+    const threadActivityScores = getThreadActivityScores(getState());
+    const legacyThreadOrder = getLegacyThreadOrder(getState());
+    const globalTrackOrder = initializeGlobalTrackOrder(
+      globalTracks,
+      null, // Passing null to urlGlobalTrackOrder to reinitilize it.
+      legacyThreadOrder,
+      threadActivityScores
+    );
+    const localTrackOrderByPid = initializeLocalTrackOrderByPid(
+      null, // Passing null to urlTrackOrderByPid to reinitilize it.
+      localTracksByPid,
+      legacyThreadOrder,
+      profile
+    );
+
+    const tracksWithOrder = {
+      globalTracks,
+      globalTrackOrder,
+      localTracksByPid,
+      localTrackOrderByPid,
+    };
+
+    let hiddenTracks = null;
+
+    // For non-initial profile loads, initialize the set of hidden tracks from
+    // information in the URL.
+    const legacyHiddenThreads = getLegacyHiddenThreads(getState());
+    if (legacyHiddenThreads !== null) {
+      hiddenTracks = tryInitializeHiddenTracksLegacy(
+        tracksWithOrder,
+        legacyHiddenThreads,
+        profile
+      );
+    }
+    if (hiddenTracks === null) {
+      // Compute a default set of hidden tracks.
+      // This is the case for the initial profile load.
+      // We also get here if the URL info was ignored, for example if
+      // respecting it would have caused all threads to become hidden.
+      const includeParentProcessThreads = tabID === null;
+      hiddenTracks = computeDefaultHiddenTracks(
+        tracksWithOrder,
+        profile,
+        threadActivityScores,
+        // Only include the parent process if there is no tab filter applied.
+        includeParentProcessThreads
+      );
+    }
+
+    const selectedThreadIndexes = initializeSelectedThreadIndex(
+      null, // maybeSelectedThreadIndexes
+      getVisibleThreads(tracksWithOrder, hiddenTracks),
+      profile,
+      threadActivityScores
+    );
+
+    // If the currently selected tab is only visible when the selected track
+    // has samples, verify that the selected track has samples, and if not
+    // select the marker chart.
+    let selectedTab = getSelectedTab(getState());
+    if (tabsShowingSampleData.includes(selectedTab)) {
+      let hasSamples = false;
+      for (const threadIndex of selectedThreadIndexes) {
+        const thread = profile.threads[threadIndex];
+        const { samples, jsAllocations, nativeAllocations } = thread;
+        hasSamples = [samples, jsAllocations, nativeAllocations].some((table) =>
+          hasUsefulSamples(table?.stack, profile.shared)
+        );
+        if (hasSamples) {
+          break;
+        }
+      }
+      if (!hasSamples) {
+        selectedTab = 'marker-chart';
+      }
+    }
+
+    dispatch({
+      type: 'CHANGE_TAB_FILTER',
+      tabID,
+      selectedThreadIndexes,
+      selectedTab,
+      globalTracks,
+      globalTrackOrder,
+      localTracksByPid,
+      localTrackOrderByPid,
+      ...hiddenTracks,
+    });
+  };
+}

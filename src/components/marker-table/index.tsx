@@ -1,0 +1,533 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+import { PureComponent } from 'react';
+import memoize from 'memoize-immutable';
+
+import explicitConnect from '../../utils/connect';
+import { ColumnSortState, TreeView } from '../shared/TreeView';
+import { MarkerTableEmptyReasons } from './MarkerTableEmptyReasons';
+import {
+  getZeroAt,
+  getScrollToSelectionGeneration,
+  getMarkerSchemaByName,
+  getCurrentTableViewOptions,
+} from '../../selectors/profile';
+import { selectedThreadSelectors } from '../../selectors/per-thread';
+import {
+  getSelectedThreadsKey,
+  getMarkerTableSort,
+} from '../../selectors/url-state';
+import {
+  changeSelectedMarker,
+  changeRightClickedMarker,
+  changeTableViewOptions,
+  changeMarkerTableSort,
+} from '../../actions/profile-view';
+import { MarkerSettings } from '../shared/MarkerSettings';
+import { formatSeconds, formatTimestamp } from '../../utils/format-numbers';
+import { assertExhaustiveCheck } from '../../utils/types';
+import copy from 'copy-to-clipboard';
+
+import './index.css';
+
+import type {
+  ThreadsKey,
+  Marker,
+  MarkerIndex,
+  Milliseconds,
+  MarkerSchemaByName,
+  TableViewOptions,
+  SelectionContext,
+} from 'firefox-profiler/types';
+import type {
+  SingleColumnSortState,
+  Tree,
+  SortableColumn,
+} from '../shared/TreeView';
+
+import type { ConnectedProps } from '../../utils/connect';
+
+// Limit how many characters in the description get sent to the DOM.
+const MAX_DESCRIPTION_CHARACTERS = 500;
+
+const DEFAULT_MARKER_TABLE_SORT: SingleColumnSortState[] = [
+  { column: 'start', ascending: true },
+];
+const DEFAULT_MARKER_TABLE_SORT_STATE = new ColumnSortState(
+  DEFAULT_MARKER_TABLE_SORT
+);
+
+type MarkerDisplayData = {
+  start: string;
+  duration: string | null;
+  name: string;
+  details: string;
+};
+
+class MarkerTree implements Tree<MarkerDisplayData> {
+  _getMarker: (param: MarkerIndex) => Marker;
+  _markerIndexes: MarkerIndex[];
+  _zeroAt: Milliseconds;
+  _displayDataByIndex: Map<MarkerIndex, MarkerDisplayData>;
+  _markerSchemaByName: MarkerSchemaByName;
+  _getMarkerLabel: (param: MarkerIndex) => string;
+
+  constructor(
+    getMarker: (param: MarkerIndex) => Marker,
+    markerIndexes: MarkerIndex[],
+    zeroAt: Milliseconds,
+    markerSchemaByName: MarkerSchemaByName,
+    getMarkerLabel: (param: MarkerIndex) => string
+  ) {
+    this._getMarker = getMarker;
+    this._markerIndexes = markerIndexes;
+    this._zeroAt = zeroAt;
+    this._displayDataByIndex = new Map();
+    this._markerSchemaByName = markerSchemaByName;
+    this._getMarkerLabel = getMarkerLabel;
+  }
+
+  static _sortableColumns: SortableColumn[] = [
+    { column: 'start', prefersDescending: false },
+    { column: 'duration', prefersDescending: true },
+    { column: 'name', prefersDescending: false },
+  ];
+
+  getSortableColumns(): SortableColumn[] {
+    return MarkerTree._sortableColumns;
+  }
+
+  copyTable = (
+    format: 'plain' | 'markdown',
+    onExceeedMaxCopyRows: (rows: number, maxRows: number) => void,
+    sort: ColumnSortState | null
+  ) => {
+    const lines = [];
+
+    const startLabel = 'Start';
+    const durationLabel = 'Duration';
+    const nameLabel = 'Name';
+    const detailsLabel = 'Details';
+
+    const header = [startLabel, durationLabel, nameLabel, detailsLabel];
+
+    let maxStartLength = startLabel.length;
+    let maxDurationLength = durationLabel.length;
+    let maxNameLength = nameLabel.length;
+
+    const MAX_COPY_ROWS = 10000;
+
+    let roots = this.getRoots(sort);
+    if (roots.length > MAX_COPY_ROWS) {
+      onExceeedMaxCopyRows(roots.length, MAX_COPY_ROWS);
+      roots = roots.slice(0, MAX_COPY_ROWS);
+    }
+
+    for (const index of roots) {
+      const data = this.getDisplayData(index);
+      const duration = data.duration ?? '';
+
+      maxStartLength = Math.max(data.start.length, maxStartLength);
+      maxDurationLength = Math.max(duration.length, maxDurationLength);
+      maxNameLength = Math.max(data.name.length, maxNameLength);
+
+      lines.push([
+        data.start,
+        // Use "u" instead, to make the table aligned with fixed-width text.
+        duration.replace(/μ/g, 'u'),
+        data.name,
+        data.details,
+      ]);
+    }
+
+    let text = '';
+    switch (format) {
+      case 'plain': {
+        const formatter = ([start, duration, name, details]: string[]) => {
+          const line = [
+            start.padStart(maxStartLength, ' '),
+            duration.padStart(maxDurationLength, ' '),
+            name.padStart(maxNameLength, ' '),
+          ];
+          if (details) {
+            line.push(details);
+          }
+          return line.join('  ');
+        };
+
+        text += formatter(header) + '\n' + lines.map(formatter).join('\n');
+        break;
+      }
+      case 'markdown': {
+        const formatter = ([start, duration, name, details]: string[]) => {
+          const line = [
+            start.padStart(maxStartLength, ' '),
+            duration.padStart(maxDurationLength, ' '),
+            name.padStart(maxNameLength, ' '),
+            details,
+          ];
+          return '| ' + line.join(' | ') + ' |';
+        };
+        const sep =
+          '|' +
+          [
+            '-'.repeat(maxStartLength + 1) + ':',
+            '-'.repeat(maxDurationLength + 1) + ':',
+            '-'.repeat(maxNameLength + 1) + ':',
+            '-'.repeat(9),
+          ].join('|') +
+          '|';
+        text =
+          formatter(header) +
+          '\n' +
+          sep +
+          '\n' +
+          lines.map(formatter).join('\n');
+        break;
+      }
+      default:
+        throw assertExhaustiveCheck(format);
+    }
+
+    copy(text);
+  };
+
+  getRoots(sort: ColumnSortState | null): MarkerIndex[] {
+    if (sort !== null) {
+      return sort.sortItems(
+        this._markerIndexes,
+        (first: MarkerIndex, second: MarkerIndex, column: string) => {
+          const firstValue = this._getSortValueForColumn(first, column);
+          const secondValue = this._getSortValueForColumn(second, column);
+          if (typeof firstValue === 'string') {
+            return firstValue.localeCompare(secondValue as string);
+          }
+          // Compare via < / > rather than subtraction to avoid NaN when both
+          // values are -Infinity (instant / incomplete markers).
+          const a = firstValue as number;
+          const b = secondValue as number;
+          if (a < b) {
+            return -1;
+          }
+          if (a > b) {
+            return 1;
+          }
+          return 0;
+        }
+      );
+    }
+    return this._markerIndexes;
+  }
+
+  getChildren(
+    markerIndex: MarkerIndex,
+    sort: ColumnSortState | null
+  ): MarkerIndex[] {
+    return markerIndex === -1 ? this.getRoots(sort) : [];
+  }
+
+  // Returns a value suitable for comparing markers along a sortable column.
+  // Instant markers and incomplete markers return -Infinity for the duration
+  // column: they group at the top when sorting duration ascending, and at
+  // the bottom when sorting duration descending.
+  _getSortValueForColumn(
+    markerIndex: MarkerIndex,
+    column: string
+  ): string | number {
+    const marker = this._getMarker(markerIndex);
+    switch (column) {
+      case 'start':
+        return marker.start;
+      case 'duration': {
+        if (marker.incomplete || marker.end === null) {
+          return -Infinity;
+        }
+        return marker.end - marker.start;
+      }
+      case 'name':
+        return marker.name;
+      default:
+        throw new Error('Invalid column ' + column);
+    }
+  }
+
+  hasChildren(_markerIndex: MarkerIndex): boolean {
+    return false;
+  }
+
+  getAllDescendants() {
+    return new Set<number>();
+  }
+
+  getParent(): MarkerIndex {
+    // -1 isn't used, but needs to be compatible with the call tree.
+    return -1;
+  }
+
+  getDepth() {
+    return 0;
+  }
+
+  getDisplayData(markerIndex: MarkerIndex): MarkerDisplayData {
+    let displayData = this._displayDataByIndex.get(markerIndex);
+    if (displayData === undefined) {
+      const marker = this._getMarker(markerIndex);
+      let details = this._getMarkerLabel(markerIndex);
+
+      if (details.length > MAX_DESCRIPTION_CHARACTERS) {
+        // This was adapted from the log marker payloads as a general rule for
+        // the marker table. This way no special handling is needed.
+        details = details.substring(0, MAX_DESCRIPTION_CHARACTERS) + '…';
+      }
+
+      let duration = null;
+      const markerEnd = marker.end;
+      if (marker.incomplete) {
+        duration = 'unknown';
+      } else if (markerEnd !== null) {
+        duration = formatTimestamp(markerEnd - marker.start);
+      }
+
+      displayData = {
+        start: _formatStart(marker.start, this._zeroAt),
+        duration,
+        name: marker.name,
+        details,
+      };
+      this._displayDataByIndex.set(markerIndex, displayData);
+    }
+    return displayData;
+  }
+}
+
+function _formatStart(start: number, zeroAt: number) {
+  return formatSeconds(start - zeroAt);
+}
+
+type StateProps = {
+  readonly threadsKey: ThreadsKey;
+  readonly getMarker: (param: MarkerIndex) => Marker;
+  readonly markerIndexes: MarkerIndex[];
+  readonly selectedMarker: MarkerIndex | null;
+  readonly rightClickedMarkerIndex: MarkerIndex | null;
+  readonly zeroAt: Milliseconds;
+  readonly scrollToSelectionGeneration: number;
+  readonly markerSchemaByName: MarkerSchemaByName;
+  readonly getMarkerLabel: (param: MarkerIndex) => string;
+  readonly tableViewOptions: TableViewOptions;
+  readonly sort: SingleColumnSortState[] | null;
+};
+
+type DispatchProps = {
+  readonly changeSelectedMarker: typeof changeSelectedMarker;
+  readonly changeRightClickedMarker: typeof changeRightClickedMarker;
+  readonly onTableViewOptionsChange: (param: TableViewOptions) => any;
+  readonly changeMarkerTableSort: typeof changeMarkerTableSort;
+};
+
+type Props = ConnectedProps<{}, StateProps, DispatchProps>;
+
+class MarkerTableImpl extends PureComponent<Props> {
+  _fixedColumns = [
+    {
+      propName: 'start',
+      titleL10nId: 'MarkerTable--start',
+      minWidth: 35,
+      initialWidth: 95,
+      resizable: true,
+    },
+    {
+      propName: 'duration',
+      titleL10nId: 'MarkerTable--duration',
+      minWidth: 40,
+      initialWidth: 90,
+      resizable: true,
+    },
+    {
+      propName: 'name',
+      titleL10nId: 'MarkerTable--name',
+      minWidth: 40,
+      initialWidth: 160,
+      resizable: true,
+    },
+  ];
+  _mainColumn = { propName: 'details', titleL10nId: 'MarkerTable--details' };
+  _expandedNodeIds: Array<MarkerIndex | null> = [];
+  _onExpandedNodeIdsChange = () => {};
+  _treeView: TreeView<MarkerDisplayData> | null = null;
+  _takeTreeViewRef = (treeView: TreeView<MarkerDisplayData> | null) => {
+    this._treeView = treeView;
+  };
+
+  _getColumnSort = memoize((sort: SingleColumnSortState[] | null) =>
+    sort === null ? DEFAULT_MARKER_TABLE_SORT_STATE : new ColumnSortState(sort)
+  );
+
+  getMarkerTree = memoize(
+    (
+      getMarker: any,
+      markerIndexes: any,
+      zeroAt: any,
+      markerSchemaByName: any,
+      getMarkerLabel: any
+    ) =>
+      new MarkerTree(
+        getMarker,
+        markerIndexes,
+        zeroAt,
+        markerSchemaByName,
+        getMarkerLabel
+      ),
+    { limit: 1 }
+  );
+
+  override componentDidMount() {
+    this.focus();
+    if (this._treeView) {
+      this._treeView.scrollSelectionIntoView();
+    }
+  }
+
+  override componentDidUpdate(prevProps: Props) {
+    if (
+      this.props.scrollToSelectionGeneration >
+      prevProps.scrollToSelectionGeneration
+    ) {
+      if (this._treeView) {
+        this._treeView.scrollSelectionIntoView();
+      }
+    }
+  }
+
+  focus() {
+    const treeView = this._treeView;
+    if (treeView) {
+      treeView.focus();
+    }
+  }
+
+  _onSelectionChange = (
+    selectedMarker: MarkerIndex,
+    context: SelectionContext
+  ) => {
+    const { threadsKey, changeSelectedMarker } = this.props;
+    changeSelectedMarker(threadsKey, selectedMarker, context);
+  };
+
+  _onColumnSortChange = (columnSort: ColumnSortState) => {
+    // Normalize matches-default to null so the URL omits the param and every
+    // client can treat "user hasn't overridden the default" uniformly.
+    this.props.changeMarkerTableSort(
+      columnSort.equals(DEFAULT_MARKER_TABLE_SORT_STATE)
+        ? null
+        : columnSort.entries
+    );
+  };
+
+  _onRightClickSelection = (selectedMarker: MarkerIndex) => {
+    const { threadsKey, changeRightClickedMarker } = this.props;
+    changeRightClickedMarker(threadsKey, selectedMarker);
+  };
+
+  _copyTable = (
+    format: 'plain' | 'markdown',
+    onExceedMaxRows: (rows: number, maxRows: number) => void
+  ) => {
+    const {
+      getMarker,
+      markerIndexes,
+      zeroAt,
+      markerSchemaByName,
+      getMarkerLabel,
+      sort,
+    } = this.props;
+    const tree = this.getMarkerTree(
+      getMarker,
+      markerIndexes,
+      zeroAt,
+      markerSchemaByName,
+      getMarkerLabel
+    );
+    tree.copyTable(format, onExceedMaxRows, this._getColumnSort(sort));
+  };
+
+  override render() {
+    const {
+      getMarker,
+      markerIndexes,
+      zeroAt,
+      selectedMarker,
+      rightClickedMarkerIndex,
+      markerSchemaByName,
+      getMarkerLabel,
+    } = this.props;
+    const tree = this.getMarkerTree(
+      getMarker,
+      markerIndexes,
+      zeroAt,
+      markerSchemaByName,
+      getMarkerLabel
+    );
+    return (
+      <div
+        className="markerTable"
+        id="marker-table-tab"
+        role="tabpanel"
+        aria-labelledby="marker-table-tab-button"
+      >
+        <MarkerSettings copyTable={this._copyTable} />
+        {markerIndexes.length === 0 ? (
+          <MarkerTableEmptyReasons />
+        ) : (
+          <TreeView
+            maxNodeDepth={0}
+            tree={tree}
+            fixedColumns={this._fixedColumns}
+            mainColumn={this._mainColumn}
+            onSelectionChange={this._onSelectionChange}
+            onRightClickSelection={this._onRightClickSelection}
+            onExpandedNodesChange={this._onExpandedNodeIdsChange}
+            selectedNodeId={selectedMarker}
+            rightClickedNodeId={rightClickedMarkerIndex}
+            expandedNodeIds={this._expandedNodeIds}
+            ref={this._takeTreeViewRef}
+            contextMenuId="MarkerContextMenu"
+            rowHeight={16}
+            indentWidth={10}
+            viewOptions={this.props.tableViewOptions}
+            onViewOptionsChange={this.props.onTableViewOptionsChange}
+            columnSort={this._getColumnSort(this.props.sort)}
+            onColumnSortChange={this._onColumnSortChange}
+          />
+        )}
+      </div>
+    );
+  }
+}
+
+export const MarkerTable = explicitConnect<{}, StateProps, DispatchProps>({
+  mapStateToProps: (state) => ({
+    threadsKey: getSelectedThreadsKey(state),
+    scrollToSelectionGeneration: getScrollToSelectionGeneration(state),
+    getMarker: selectedThreadSelectors.getMarkerGetter(state),
+    markerIndexes: selectedThreadSelectors.getMarkerTableMarkerIndexes(state),
+    selectedMarker: selectedThreadSelectors.getSelectedMarkerIndex(state),
+    rightClickedMarkerIndex:
+      selectedThreadSelectors.getRightClickedMarkerIndex(state),
+    zeroAt: getZeroAt(state),
+    markerSchemaByName: getMarkerSchemaByName(state),
+    getMarkerLabel: selectedThreadSelectors.getMarkerTableLabelGetter(state),
+    tableViewOptions: getCurrentTableViewOptions(state),
+    sort: getMarkerTableSort(state),
+  }),
+  mapDispatchToProps: {
+    changeSelectedMarker,
+    changeRightClickedMarker,
+    onTableViewOptionsChange: (tableViewOptions) =>
+      changeTableViewOptions('marker-table', tableViewOptions),
+    changeMarkerTableSort,
+  },
+  component: MarkerTableImpl,
+});

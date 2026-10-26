@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -27,9 +21,20 @@ AppHeader--app-header = <header>{ -profiler-brand-name }</header> — <subheader
 AppHeader--github-icon =
     .title = Visita il nostro repository Git (il link verrà aperto in una nuova finestra)
 
+## ThemeToggle
+## They are used at the top right side of the home page to switch between themes.
+
+ThemeToggle--system =
+    .title = Segui le impostazioni del tema di sistema
+ThemeToggle--light =
+    .title = Usa tema chiaro
+ThemeToggle--dark =
+    .title = Usa tema scuro
+
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Impossibile importare il profilo.
 AppViewRouter--error-unpublished = Impossibile recuperare il profilo da { -firefox-brand-name }.
 AppViewRouter--error-from-file = Impossibile leggere il file o analizzare il profilo in esso contenuto.
 AppViewRouter--error-local = Non ancora implementato.
@@ -41,8 +46,21 @@ AppViewRouter--error-compare = Impossibile recuperare i profili.
 # https://profiler.firefox.com/from-url/http%3A%2F%2F127.0.0.1%3A3000%2Fprofile.json/
 AppViewRouter--error-from-localhost-url-safari = A causa di una <a>limitazione specifica di Safari</a>, { -profiler-brand-name } non può importare profili dal dispositivo locale in questo browser. Aprire questa pagina in { -firefox-brand-name } o Chrome.
     .title = Impossibile importare profili locali in Safari
+# This error message is displayed when the profile is in a newer format version
+# than this build of the Profiler is able to read.
+AppViewRouter--error-profile-version =
+    Questo profilo utilizza un formato non compatibile con questa versione di { -profiler-brand-name }.
+    Ricarica la pagina per verificare se è disponibile un aggiornamento per { -profiler-brand-name }.
 AppViewRouter--route-not-found--home =
     .specialMessage = L’URL che hai cercato di raggiungere non è stato riconosciuto.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (incorporata)
+    .title = { $function } è stata incorporata nel chiamante dal compilatore.
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -62,6 +80,18 @@ CallNodeContextMenu--transform-focus-function = Focus sulla funzione
     .title = { CallNodeContextMenu--transform-focus-function-title }
 CallNodeContextMenu--transform-focus-function-inverted = Focus sulla funzione (invertito)
     .title = { CallNodeContextMenu--transform-focus-function-title }
+
+## The translation for "self" in these strings should match the translation used
+## in CallTree--samples-self and CallTree--bytes-self. Alternatively it can be
+## translated as "self values" or "self time" (though "self time" is less desirable
+## because this menu item is also shown in "bytes" mode).
+
+CallNodeContextMenu--transform-focus-self-title = Il focus su “self” è analogo al focus su una funzione, ma vengono mantenuti solo i campioni che incidono sul tempo stesso della funzione. I campioni presenti nelle funzioni chiamate vengono ignorati e l’albero delle chiamate viene riorganizzato avendo come radice la funzione che si sta analizzando.
+CallNodeContextMenu--transform-focus-self = Focus solo su self
+    .title = { CallNodeContextMenu--transform-focus-self-title }
+
+##
+
 CallNodeContextMenu--transform-focus-subtree = Focus solo sul sottoalbero
     .title = Il focus sul sottoalbero rimuoverà tutti i campioni che non includono quella specifica parte dell’albero delle chiamate. Estrae un ramo dell’albero, ma solo per quel singolo nodo di chiamata. Tutte le altre chiamate a quella funzione vengono ignorate.
 # This is used as the context menu item to apply the "Focus on category" transform.
@@ -89,6 +119,7 @@ CallNodeContextMenu--searchfox = Cerca la funzione in Searchfox
 CallNodeContextMenu--copy-function-name = Copia nome della funzione
 CallNodeContextMenu--copy-script-url = Copia URL dello script
 CallNodeContextMenu--copy-stack = Copia stack
+CallNodeContextMenu--show-the-function-in-devtools = Mostra la funzione in DevTools
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -205,16 +236,17 @@ ErrorBoundary--report-error-to-developers-description = Segnalare questo problem
 # This is used in a call to action button, displayed inside the error box.
 ErrorBoundary--report-error-on-github = Segnala l’errore su GitHub
 
-## Footer Links
+## Settings Menu
+## The settings popup opened from the cog icon in the top bar.
 
-FooterLinks--legal = Note legali
-FooterLinks--Privacy = Informativa sulla privacy
-FooterLinks--Cookies = Cookie
-FooterLinks--languageSwitcher--select =
+SettingsMenu--button =
+    .title = Impostazioni
+SettingsMenu--docs = Documentazione
+SettingsMenu--legal = Note legali
+SettingsMenu--privacy = Privacy
+SettingsMenu--cookies = Cookie
+SettingsMenu--language-switcher =
     .title = Cambia lingua
-FooterLinks--hide-button =
-    .title = Nascondi collegamenti a piè di pagina
-    .aria-label = Nascondi collegamenti a piè di pagina
 
 ## FullTimeline
 ## The timeline component of the full view in the analysis UI at the top of the
@@ -247,7 +279,11 @@ Home--enable-button-unavailable =
 # This message can be seen on https://main--perf-html.netlify.app/ .
 Home--web-channel-unavailable = Questa istanza del profiler non è stata in grado di connettersi al WebChannel. Normalmente significa che è in esecuzione su un host diverso da quello specificato nell’impostazione <code>devtools.performance.recording.ui-base-url</code>. Se vuoi catturare nuovi profili con questa istanza e assegnarle il controllo programmatico del pulsante del menu del profiler, apri <code>about:config</code> e modifica questa impostazione.
 Home--record-instructions = Per avviare la profilazione, fai clic sul pulsante per avviare la registrazione oppure utilizza le scorciatoie da tastiera. L’icona diventa blu quando è attiva la registrazione di un profilo. Premi <kbd>Cattura</kbd> per caricare i dati su profiler.firefox.com.
-Home--instructions-content = La registrazione dei profili è possibile solo con <a>{ -firefox-brand-name }</a>. I profili esistenti possono essere visualizzati con qualsiasi browser.
+Home--instructions-content2 = La registrazione dei profili è possibile solo con <a>{ -firefox-brand-name } per desktop</a>. I profili esistenti possono essere visualizzati con qualsiasi browser.
+Home--fenix-instructions-directly = È possibile creare profili per { -firefox-android-brand-name } direttamente su questo dispositivo. Per ulteriori informazioni, leggi <a>Profilazione di { -firefox-android-brand-name } direttamente sul dispositivo</a>.
+Home--fenix-instructions-remotely =
+    È inoltre possibile creare profili di { -firefox-android-brand-name } da remoto con { -firefox-brand-name }
+    per desktop. Per ulteriori informazioni, consulta <a>Profilazione remota di { -firefox-android-brand-name }</a>.
 Home--record-instructions-start-stop = Interrompi e avvia la profilatura
 Home--record-instructions-capture-load = Cattura e carica profilo
 Home--profiler-motto = Cattura un profilo delle prestazioni. Analizzalo. Condividilo. Rendi il Web più veloce.
@@ -255,17 +291,24 @@ Home--additional-content-title = Carica profili esistenti
 Home--additional-content-content = È possibile <strong>trascinare e rilasciare</strong> qui un profilo per caricarlo, oppure:
 Home--compare-recordings-info = È anche possibile confrontare diverse registrazioni. <a>Apri l’interfaccia per il confronto</a>.
 Home--your-recent-uploaded-recordings-title = Le tue registrazioni caricate di recente
+Home--dark-mode-title = Modalità scura
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
     { -profiler-brand-name } può anche importare profili da altri profiler, come <perf>Linux perf</perf>, <simpleperf>Android SimplePerf</simpleperf>, il
     pannello prestazioni di Chrome, <androidstudio>Android Studio</androidstudio> o qualsiasi file che utilizzi il <dhat>formato dhat</dhat> o <traceevent>Trace Event di Google</traceevent>. <write>Scopri come creare uno strumento di importazione</write>.
+Home--install-chrome-extension = Installa l’estensione per Chrome
+Home--chrome-extension-instructions = Utilizza l’estensione <a>{ -profiler-brand-name } per Chrome</a> per acquisire i profili delle prestazioni in Chrome e analizzarli in { -profiler-brand-name }. Installa l’estensione dal Chrome Web Store.
+Home--chrome-extension-recording-instructions = Una volta installata, utilizza l’icona dell’estensione nella barra degli strumenti o le scorciatoie per avviare e interrompere la profilazione. Puoi anche esportare i profili e caricarli qui per un’analisi dettagliata.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
 
-IdleSearchField--search-input =
-    .placeholder = Inserisci i termini da cercare
+# `/` here overrides Firefox's Type Ahead Find shortcut, which would
+# otherwise trigger an unhelpful find bar on top of the profiler UI.
+# The shortcut itself is not localizable.
+IdleSearchField--search-input2 =
+    .placeholder = Inserisci i termini da filtrare (/)
 
 ## JsTracerSettings
 ## JSTracer is an experimental feature and it's currently disabled. See Bug 1565788.
@@ -338,6 +381,13 @@ MarkerContextMenu--select-the-sender-thread = Seleziona il thread di origine “
 #   $filter (String) - Search string that will be used to filter the markers.
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = Scarta campioni al di fuori dei marker corrispondenti a “<strong>{ $filter }</strong>”
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = Copia tabella dei marker come testo normale
+MarkerCopyTableContextMenu--copy-table-as-markdown = Copia tabella dei marker come Markdown
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
@@ -346,6 +396,14 @@ MarkerSettings--panel-search =
     .title = Visualizza solo marker che corrispondono a un determinato nome
 MarkerSettings--marker-filters =
     .title = Filtri per i marker
+MarkerSettings--copy-table =
+    .title = Copia tabella come testo
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = Il numero di righe supera il limite: { $rows } > { $maxRows }. Verranno copiate solo le prime { $maxRows } righe.
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -360,6 +418,16 @@ MarkerTable--duration = Durata
 MarkerTable--name = Nome
 MarkerTable--details = Dettagli
 
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .aria-label = Mostra solo i marker corrispondenti a: “{ $filter }”
+    .title = Mostra solo i marker corrispondenti a: “{ $filter }”
+
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
 
@@ -367,14 +435,15 @@ MenuButtons--index--metaInfo-button =
     .label = Informazioni profilo
 MenuButtons--index--full-view = Vista completa
 MenuButtons--index--cancel-upload = Annulla caricamento
-MenuButtons--index--share-upload =
-    .label = Carica profilo locale
-MenuButtons--index--share-re-upload =
-    .label = Carica di nuovo
+MenuButtons--index--save =
+    .label = Salva…
+MenuButtons--index--share =
+    .label = Condividi…
+MenuButtons--index--reshare =
+    .label = Condividi di nuovo…
 MenuButtons--index--share-error-uploading =
     .label = Errore durante il caricamento
 MenuButtons--index--revert = Ripristina profilo originale
-MenuButtons--index--docs = Documentazione
 MenuButtons--permalink--button =
     .label = Link permanente
 
@@ -392,6 +461,28 @@ MenuButtons--metaInfo--resymbolicate-profile = Risimbolizza il profilo
 MenuButtons--metaInfo--symbolicate-profile = Simbolizza il profilo
 MenuButtons--metaInfo--attempting-resymbolicate = Tentativo di risimbolizzare il profilo
 MenuButtons--metaInfo--currently-symbolicating = Profilo attualmente in fase di simbolizzazione
+MenuButtons--metaInfo--source-maps = Mappe del codice sorgente:
+# The trailing ellipsis indicates that clicking the button opens a file picker.
+MenuButtons--metaInfo--apply-source-map = Applica mappa del codice sorgente…
+    .title = Carica un file .map dal disco per associare un bundle JavaScript minimizzato al codice sorgente originale, recuperando i nomi delle funzioni e le posizioni nel sorgente.
+# Shown when the uploaded map could match more than one source and the user has
+# to choose which one it applies to.
+MenuButtons--metaInfo--source-map-choose-bundle = Scegli il bundle a cui applicare questa mappa del codice sorgente:
+# Button to confirm the chosen source and apply the source map to it.
+MenuButtons--metaInfo--source-map-apply = Applica
+# Button to dismiss the source chooser without symbolicating.
+MenuButtons--metaInfo--source-map-cancel = Annulla
+# Shown after symbolication finished and original sources were resolved.
+# Variable:
+#   $filename (String) - The bundle source the source map was applied to.
+MenuButtons--metaInfo--source-map-success = Sorgenti originali risolti per { $filename }.
+# Shown after symbolication finished but no stack positions matched the map.
+# Variable:
+#   $filename (String) - The bundle source the source map was applied to.
+MenuButtons--metaInfo--source-map-no-match = Nessuna posizione dello stack in { $filename } corrisponde a questa mappa del codice sorgente.
+MenuButtons--metaInfo--source-map-error-invalid = Il file selezionato non è una mappa del codice sorgente valida.
+MenuButtons--metaInfo--source-map-error-no-eligible = Questo profilo non ha bundle JS con URL per la mappa del codice sorgente.
+MenuButtons--metaInfo--source-map-error-failed = Impossibile applicare questa mappa del codice sorgente al profilo.
 MenuButtons--metaInfo--cpu-model = Modello CPU:
 MenuButtons--metaInfo--cpu-cores = Core della CPU:
 MenuButtons--metaInfo--main-memory = Memoria principale:
@@ -403,11 +494,16 @@ MenuButtons--index--hide-moreInfo-button = Nascondi dettagli
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-        [one] { $physicalCPUs } core fisico
-       *[other] { $physicalCPUs } core fisici
-    }, { $logicalCPUs ->
-        [one] { $logicalCPUs } core logico
-       *[other] { $logicalCPUs } core logici
+        [one]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } core fisico, { $logicalCPUs } core logico
+               *[other] { $physicalCPUs } core fisico, { $logicalCPUs } core logici
+            }
+       *[other]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } core fisici, { $logicalCPUs } core logico
+               *[other] { $physicalCPUs } core fisici, { $logicalCPUs } core logici
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -431,6 +527,8 @@ MenuButtons--metaInfo--profiling-started = Registrazione avviata:
 MenuButtons--metaInfo--profiling-session = Lunghezza registrazione:
 MenuButtons--metaInfo--main-process-started = Processo principale avviato:
 MenuButtons--metaInfo--main-process-ended = Processo principale completato:
+MenuButtons--metaInfo--file-name = Nome file:
+MenuButtons--metaInfo--file-size = Dimensione file:
 MenuButtons--metaInfo--interval = Intervallo:
 MenuButtons--metaInfo--buffer-capacity = Capacità buffer:
 MenuButtons--metaInfo--buffer-duration = Durata buffer:
@@ -446,7 +544,8 @@ MenuButtons--metaInfo--buffer-duration-seconds =
 MenuButtons--metaInfo--buffer-duration-unlimited = Illimitata
 MenuButtons--metaInfo--application = Applicazione
 MenuButtons--metaInfo--name-and-version = Nome e versione:
-MenuButtons--metaInfo--application-uptime = Tempo di attività:
+# The time between application startup and when the profiler was started
+MenuButtons--metaInfo--application-uptime2 = Tempo di attività:
 MenuButtons--metaInfo--update-channel = Canale di aggiornamento:
 MenuButtons--metaInfo--build-id = ID build:
 MenuButtons--metaInfo--build-type = Tipo di build:
@@ -509,9 +608,15 @@ MenuButtons--publish--renderCheckbox-label-preference = Includi valori delle imp
 MenuButtons--publish--renderCheckbox-label-private-browsing = Includi i dati dalle finestre di navigazione anonima
 MenuButtons--publish--renderCheckbox-label-private-browsing-warning-image =
     .title = Questo profilo contiene dati di navigazione anonima
-MenuButtons--publish--reupload-performance-profile = Ricarica il profilo delle prestazioni
+MenuButtons--publish--renderCheckbox-label-argument-values = Includi i valori degli argomenti delle funzioni tracciate durante l’esecuzione JavaScript
+MenuButtons--publish--renderCheckbox-label-argument-values-warning-image =
+    .title = Questo profilo include i valori degli argomenti delle funzioni raccolti dalla pagina; questi potrebbero contenere dati personali
 MenuButtons--publish--share-performance-profile = Condividi il profilo delle prestazioni
+MenuButtons--publish--reshare-performance-profile = Condividi nuovamente il profilo delle prestazioni
+MenuButtons--publish--save-performance-profile = Salva profilo prestazioni
+MenuButtons--publish--local-profile-description = Questo profilo non è stato caricato e andrà perso alla chiusura della scheda. Per conservarlo, salvalo sul computer oppure caricalo tramite Condividi.
 MenuButtons--publish--info-description = Carica il tuo profilo e rendilo accessibile a chiunque abbia il link.
+MenuButtons--publish--download-info-description = Salva questo profilo come file sul tuo computer.
 MenuButtons--publish--info-description-default = Per impostazione predefinita, i tuoi dati personali vengono rimossi.
 MenuButtons--publish--info-description-firefox-nightly2 = Questo profilo è stato generato in { -firefox-nightly-brand-name }, quindi per impostazione predefinita la maggior parte delle informazioni è inclusa.
 MenuButtons--publish--include-additional-data = Includi dati aggiuntivi che potrebbero essere identificabili
@@ -520,7 +625,7 @@ MenuButtons--publish--upload-title = Caricamento profilo in corso…
 MenuButtons--publish--cancel-upload = Annulla caricamento
 MenuButtons--publish--message-something-went-wrong = Uh, si è verificato un errore durante il caricamento del profilo.
 MenuButtons--publish--message-try-again = Riprova
-MenuButtons--publish--download = Scarica
+MenuButtons--publish--save = Salva
 MenuButtons--publish--compressing = Compressione in corso…
 MenuButtons--publish--error-while-compressing = Errore durante la compressione, prova a deselezionare alcune caselle di controllo per ridurre le dimensioni del profilo.
 
@@ -549,6 +654,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 ## The component that is used for all the search input hints in the application.
 
 PanelSearch--search-field-hint = Lo sapevi che è possibile utilizzare una virgola per separare più termini di ricerca?
+
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = Modifica nome del profilo
+ProfileName--edit-profile-name-input =
+    .aria-label = Nome del profilo
+    .title = Modifica nome del profilo
 
 ## Profile Delete Button
 
@@ -595,6 +708,7 @@ ProfileFilterNavigator--full-range-with-duration = Intervallo completo ({ $fullR
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Importazione ed elaborazione del profilo in corso…
 ProfileLoaderAnimation--loading-unpublished = Importazione del profilo direttamente da { -firefox-brand-name }…
 ProfileLoaderAnimation--loading-from-file = Lettura del file e analisi del profilo…
 ProfileLoaderAnimation--loading-local = Non ancora implementato.
@@ -623,8 +737,8 @@ ServiceWorkerManager--installed-button = Ricarica l’applicazione
 ServiceWorkerManager--updated-while-not-ready = È stata applicata una nuova versione dell’applicazione prima che la pagina fosse completamente caricata. Potrebbero verificarsi dei malfunzionamenti.
 ServiceWorkerManager--new-version-is-ready = È stata scaricata una nuova versione dell’applicazione ed è pronta per l’uso.
 ServiceWorkerManager--hide-notice-button =
-    .title = Nascondi l’avviso di ricarica
     .aria-label = Nascondi l’avviso di ricarica
+    .title = Nascondi l’avviso di ricarica
 
 ## StackSettings
 ## This is the settings component that is used in Call Tree, Flame Graph and Stack
@@ -632,8 +746,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = Tutti i frame
     .title = Non filtrare gli stack frame
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Mostra solo gli stack frame relativi all’esecuzione di JavaScript
+StackSettings--implementation-script = Script
+    .title = Mostra solo gli stack frame relativi all’esecuzione di script
 StackSettings--implementation-native2 = Nativo
     .title = Mostra solo gli stack frame per il codice nativo
 # This label is displayed in the marker chart and marker table panels only.
@@ -653,7 +767,10 @@ StackSettings--call-tree-strategy-native-deallocations-sites = Deallocazione sit
     .title = Sintetizza usando i byte di memoria deallocati, in base dal sito in cui la memoria è stata deallocata
 StackSettings--invert-call-stack = Inverti stack di chiamata
     .title = Ordina in base al tempo trascorso in un nodo di chiamata, ignorando i nodi figlio.
+StackSettings--include-idle-samples = Includi campioni inattivi
+    .title = Deseleziona per nascondere i campioni il cui frame foglia è nella categoria inattivi.
 StackSettings--show-user-timing = Mostra tempo utente
+StackSettings--use-stack-chart-same-widths = Utilizza la stessa larghezza per ogni stack
 StackSettings--panel-search =
     .label = Filtra stack:
     .title = Mostra solo stack che contengono una funzione il cui nome corrisponde a questa sottostringa
@@ -718,9 +835,26 @@ TrackNameButton--hide-process =
 ## the UI. To learn more about it, visit:
 ## https://profiler.firefox.com/docs/#/./memory-allocations?id=memory-track
 
-TrackMemoryGraph--relative-memory-at-this-time = memoria relativa al momento
-TrackMemoryGraph--memory-range-in-graph = intervallo di memoria nel grafico
-TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample = allocazioni e deallocazioni dal campione precedente
+# Variables:
+#   $value (String) - the relative memory at this time (e.g. "5MB")
+TrackMemoryGraph--relative-memory-at-this-time2 = { $value }
+    .label = memoria relativa a questo punto
+# Variables:
+#   $value (String) - the memory range across the graph (e.g. "5MB")
+TrackMemoryGraph--memory-range-in-graph2 = { $value }
+    .label = range di memoria nel grafico
+# Variables:
+#   $value (String) - count of allocations and deallocations since the previous sample
+TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample2 = { $value }
+    .label = allocazioni e deallocazioni dal campione precedente
+
+## TrackProcessCPUGraph
+## This is used to show the CPU usage of a process over time in the timeline.
+
+# Variables:
+#   $value (String) - the CPU usage at this sample (e.g. "50%")
+TrackProcessCPUGraph--cpu = { $value }
+    .label = CPU
 
 ## TrackPower
 ## This is used to show the power used by the CPU and other chips in a computer,
@@ -747,6 +881,11 @@ TrackPower--tooltip-power-watt = { $value } W
 #   $value (String) - the power value at this location
 TrackPower--tooltip-power-milliwatt = { $value } mW
     .label = Consumo
+# This is used in the tooltip when the instant power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-power-microwatt = { $value } μW
+    .label = Consumo
 # This is used in the tooltip when the power value uses the kilowatt unit.
 # Variables:
 #   $value (String) - the power value at this location
@@ -761,6 +900,11 @@ TrackPower--tooltip-average-power-watt = { $value } W
 # Variables:
 #   $value (String) - the power value at this location
 TrackPower--tooltip-average-power-milliwatt = { $value } mW
+    .label = Consumo medio nella selezione corrente
+# This is used in the tooltip when the power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-average-power-microwatt = { $value } μW
     .label = Consumo medio nella selezione corrente
 # This is used in the tooltip when the energy used in the current range uses the
 # kilowatt-hour unit.
@@ -896,6 +1040,12 @@ TransformNavigator--focus-subtree = Focus sul nodo: { $item }
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
 TransformNavigator--focus-function = Focus: { $item }
+# "Focus self" transform.
+# See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-on-function-self
+# Also see the translation note above CallNodeContextMenu--transform-focus-self.
+# Variables:
+#   $item (String) - Name of the function that transform applied to.
+TransformNavigator--focus-self = Focus su self: { $item }
 # "Focus category" transform. The word "Focus" has the meaning of an adjective here.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-category
 # Variables:
@@ -967,6 +1117,12 @@ BottomBox--assembly-code-not-available-title = Codice assembly non disponibile
 # Elements:
 #   <a>link text</a> - A link to the github issue about supported scenarios.
 BottomBox--assembly-code-not-available-text = Vedi <a>issue #4520</a> per gli scenari supportati e i miglioramenti in programma.
+# The toggle button for making the bottom box fullscreen.
+BottomBox--hide-fullscreen =
+    .title = Esci da schermo intero
+# The toggle button for making the bottom box fullscreen.
+BottomBox--show-fullscreen =
+    .title = Schermo intero
 SourceView--close-button =
     .title = Chiudi la vista sorgente
 
@@ -1023,6 +1179,13 @@ SourceView--not-in-archive-error-when-obtaining-source = Il file { $pathInArchiv
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = Impossibile analizzare l’archivio in { $url }: { $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = Il browser non è riuscito a ottenere il file sorgente per { $url } con sourceUuid { $sourceUuid }: { $errorMessage }.
 
 ## Toggle buttons in the top right corner of the bottom box
 
@@ -1034,6 +1197,17 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = Nascondi la vista assembly
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = Precedente
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = Successivo
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = { $current } di { $total }
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.

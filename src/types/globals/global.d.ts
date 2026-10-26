@@ -1,0 +1,34 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// Added by esbuild's define option
+declare const AVAILABLE_STAGING_LOCALES: string[] | null;
+declare const SOURCE_MAP_WORKER_PATH: string;
+
+declare module '*.worker.js' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.css' {}
+
+declare module '*.svg' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.jpg' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.png' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.txt' {
+  const content: string;
+  export default content;
+}

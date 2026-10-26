@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -27,9 +21,20 @@ AppHeader--app-header = <header>{ -profiler-brand-name }</header> — <subheader
 AppHeader--github-icon =
     .title = Μετάβαση στο αποθετήριο Git μας (ανοίγει σε νέο παράθυρο)
 
+## ThemeToggle
+## They are used at the top right side of the home page to switch between themes.
+
+ThemeToggle--system =
+    .title = Χρήση προτίμησης συστήματος
+ThemeToggle--light =
+    .title = Χρήση ανοιχτόχρωμου θέματος
+ThemeToggle--dark =
+    .title = Χρήση σκουρόχρωμου θέματος
+
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Δεν ήταν δυνατή η εισαγωγή του προφίλ.
 AppViewRouter--error-unpublished = Δεν ήταν δυνατή η ανάκτηση του προφίλ από το { -firefox-brand-name }.
 AppViewRouter--error-from-file = Δεν ήταν δυνατή η ανάγνωση του αρχείου ή η ανάλυση του προφίλ σε αυτό.
 AppViewRouter--error-local = Δεν έχει υλοποιηθεί ακόμα.
@@ -40,12 +45,25 @@ AppViewRouter--error-compare = Δεν ήταν δυνατή η ανάκτηση 
 # Importing profiles from URLs such as http://127.0.0.1:someport/ is not possible in Safari.
 # https://profiler.firefox.com/from-url/http%3A%2F%2F127.0.0.1%3A3000%2Fprofile.json/
 AppViewRouter--error-from-localhost-url-safari =
-    Λόγω ενός <a>συγκεκριμένου περιορισμού στο Safari</a>, το { -profiler-brand-name } δεν μπορεί να
-    εισαγάγει προφίλ από τη συσκευή σε αυτό το πρόγραμμα περιήγησης. Παρακαλούμε
-    ανοίξτε αυτήν τη σελίδα στο { -firefox-brand-name } ή το Chrome.
+    Λόγω ενός <a>συγκεκριμένου περιορισμού του Safari</a>, το { -profiler-brand-name } δεν μπορεί να
+    εισαγάγει προφίλ από τη συσκευή σε αυτό το πρόγραμμα περιήγησης.
+    Ανοίξτε αυτήν τη σελίδα στο { -firefox-brand-name } ή το Chrome.
     .title = Το Safari δεν μπορεί να εισαγάγει τοπικά προφίλ
+# This error message is displayed when the profile is in a newer format version
+# than this build of the Profiler is able to read.
+AppViewRouter--error-profile-version =
+    Αυτό το προφίλ χρησιμοποιεί μια μορφή που δεν υποστηρίζεται από αυτήν την έκδοση του { -profiler-brand-name }.
+    Δοκιμάστε να ανανεώσετε τη σελίδα για να ελέγξετε αν διατίθεται ενημέρωση για το { -profiler-brand-name }.
 AppViewRouter--route-not-found--home =
     .specialMessage = Δεν αναγνωρίστηκε το URL που προσπαθήσατε να μεταβείτε.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (ενσωματωμένη)
+    .title = Η συνάρτηση «{ $function }» ενσωματώθηκε στο καλούν στοιχείο από τον μεταγλωττιστή.
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -56,12 +74,12 @@ AppViewRouter--route-not-found--home =
 CallNodeContextMenu--show-file = Εμφάνιση <strong>{ $fileName }</strong>
 CallNodeContextMenu--transform-merge-function = Συγχώνευση συνάρτησης
     .title =
-        Η συγχώνευση μιας συνάρτησης την αφαιρεί από το προφίλ και αναθέτει το χρόνο της στη
+        Η συγχώνευση μιας συνάρτησης την αφαιρεί από το προφίλ και αναθέτει τον χρόνο της στη
         συνάρτηση που την κάλεσε. Αυτό συμβαίνει οπουδήποτε κλήθηκε η συνάρτηση
         στο δέντρο.
 CallNodeContextMenu--transform-merge-call-node = Συγχώνευση κόμβου μόνο
     .title =
-        Η συγχώνευση κόμβου τον αφαιρεί από το προφίλ και αναθέτει το χρόνο του
+        Η συγχώνευση κόμβου τον αφαιρεί από το προφίλ και αναθέτει τον χρόνο του
         στον κόμβο της συνάρτησης που τον κάλεσε. Αφαιρεί μόνο τη συνάρτηση από
         αυτό το συγκεκριμένο μέρος του δέντρου. Τα υπόλοιπα μέρη από τα οποία
         κλήθηκε η συνάρτηση θα παραμείνουν στο προφίλ.
@@ -76,6 +94,21 @@ CallNodeContextMenu--transform-focus-function = Εστίαση στη συνάρ
     .title = { CallNodeContextMenu--transform-focus-function-title }
 CallNodeContextMenu--transform-focus-function-inverted = Εστίαση στη συνάρτηση (ανεστραμμένη)
     .title = { CallNodeContextMenu--transform-focus-function-title }
+
+## The translation for "self" in these strings should match the translation used
+## in CallTree--samples-self and CallTree--bytes-self. Alternatively it can be
+## translated as "self values" or "self time" (though "self time" is less desirable
+## because this menu item is also shown in "bytes" mode).
+
+CallNodeContextMenu--transform-focus-self-title =
+    Η εστίαση στο self είναι παρόμοια με την εστίαση σε μια συνάρτηση, αλλά διατηρεί μόνο τα δείγματα
+    που συμβάλλουν στον χρόνο self της συνάρτησης. Τα δείγματα στις καλούμενες συναρτήσεις
+    απορρίπτονται και το δέντρο κλήσεων επαναριζώνεται στην εστιασμένη συνάρτηση.
+CallNodeContextMenu--transform-focus-self = Εστίαση μόνο στο self
+    .title = { CallNodeContextMenu--transform-focus-self-title }
+
+##
+
 CallNodeContextMenu--transform-focus-subtree = Εστίαση στο υπόδεντρο μόνο
     .title =
         Η εστίαση σε υπόδεντρο θα αφαιρέσει κάθε δείγμα που δεν περιλαμβάνει αυτό το
@@ -109,7 +142,7 @@ CallNodeContextMenu--transform-collapse-direct-recursion-only = Σύμπτυξη
     .title =
         Η σύμπτυξη άμεσης αναδρομής αφαιρεί κλήσεις που κάνουν επαναλαμβανόμενα αναδρομή
         στην ίδια συνάρτηση, χωρίς ενδιάμεσες συναρτήσεις στη στοίβα.
-CallNodeContextMenu--transform-drop-function = Απόρριψη δειγμάτων με αυτή τη συνάρτηση
+CallNodeContextMenu--transform-drop-function = Απόρριψη δειγμάτων με αυτήν τη συνάρτηση
     .title =
         Η απόρριψη δειγμάτων αφαιρεί τον χρόνο τους από το προφίλ. Αυτό είναι χρήσιμο για την
         εξάλειψη στοιχείων χρόνου που δεν είναι σχετικά για την ανάλυση.
@@ -120,29 +153,30 @@ CallNodeContextMenu--searchfox = Αναζήτηση ονόματος συνάρ�
 CallNodeContextMenu--copy-function-name = Αντιγραφή ονόματος συνάρτησης
 CallNodeContextMenu--copy-script-url = Αντιγραφή URL σεναρίου
 CallNodeContextMenu--copy-stack = Αντιγραφή στοίβας
+CallNodeContextMenu--show-the-function-in-devtools = Εμφάνιση της συνάρτησης στα DevTools
 
 ## CallTree
 ## This is the component for Call Tree panel.
 
 CallTree--tracing-ms-total = Χρόνος εκτέλεσης (ms)
     .title =
-        Ο “συνολικός” χρόνος εκτέλεσης περιλαμβάνει μια περίληψη όλου του χρόνου όπου
+        Ο «συνολικός» χρόνος εκτέλεσης περιλαμβάνει μια περίληψη όλου του χρόνου όπου
         παρατηρήθηκε αυτή η συνάρτηση σε στοίβα. Περιέχει τον χρόνο πραγματικής
         εκτέλεσης της συνάρτησης και τον χρόνο που χρησιμοποιήθηκε στους καλούντες από
-        αυτή τη συνάρτηση.
-CallTree--tracing-ms-self = Ιδιοχρόνος (ms)
+        αυτήν τη συνάρτηση.
+CallTree--tracing-ms-self = Self (ms)
     .title =
-        Ο ατομικός χρόνος περιλαμβάνει μόνο τον χρόνο που η συνάρτηση βρισκόταν
-        στο τέλος της στοίβας. Αν η συνάρτηση καλούταν σε άλλες συναρτήσεις,
-        τότε ο χρόνος των άλλων συναρτήσεων δεν περιλαμβάνεται. Ο ατομικός χρόνος είναι
+        Ο χρόνος «self» περιλαμβάνει μόνο τον χρόνο που η συνάρτηση βρισκόταν
+        στο τέλος της στοίβας. Αν η συνάρτηση κλήθηκε σε άλλες συναρτήσεις,
+        τότε ο χρόνος των άλλων συναρτήσεων δεν περιλαμβάνεται. Ο χρόνος «self» είναι
         χρήσιμος για να κατανοήσετε πώς ξοδεύτηκε ο χρόνος σε ένα πρόγραμμα.
 CallTree--samples-total = Σύνολο (δείγματα)
     .title = Το «σύνολο» δειγμάτων περιλαμβάνει μια σύνοψη όλων των δειγμάτων στα οποία παρατηρήθηκε ότι η συνάρτηση βρίσκεται στη στοίβα. Περιλαμβάνει τον χρόνο που εκτελούταν η συνάρτηση και τον χρόνο που ξοδεύτηκε στις κλήσεις από αυτήν τη συνάρτηση.
-CallTree--samples-self = Ιδιοαριθμός
+CallTree--samples-self = Self
     .title =
-        Ο ατομικός αριθμός δειγμάτων περιλαμβάνει μόνο τα δείγματα στα οποία η συνάρτηση
+        Το πλήθος δειγμάτων «self» περιλαμβάνει μόνο τα δείγματα στα οποία η συνάρτηση
         ήταν στο τέλος της στοίβας. Αν η συνάρτηση κλήθηκε σε άλλες συναρτήσεις,
-        τότε τα πλήθη των άλλων συναρτήσεων δεν συμπεριλαμβάνονται. Ο ατομικός αριθμός είναι χρήσιμος
+        τότε τα πλήθη των άλλων συναρτήσεων δεν συμπεριλαμβάνονται. Το πλήθος «self» είναι χρήσιμο
         για να κατανοήσετε πώς ξοδεύτηκε ο χρόνος σε ένα πρόγραμμα.
 CallTree--bytes-total = Συνολικό μέγεθος (bytes)
     .title =
@@ -150,12 +184,12 @@ CallTree--bytes-total = Συνολικό μέγεθος (bytes)
         αποδεσμεύτηκαν όσο παρατηρήθηκε ότι η συνάρτηση είναι στο τέλος της στοίβας.
         Περιλαμβάνει το μέγεθος σε bytes όπου εκτελούταν η συνάρτηση, καθώς και τα
         bytes των καλούντων από αυτήν τη συνάρτηση.
-CallTree--bytes-self = Ιδιο-bytes (bytes)
+CallTree--bytes-self = Self (bytes)
     .title =
-        Τα ατομικά bytes περιλαμβάνουν τα bytes που δεσμεύθηκαν ή αποδεσμεύθηκαν
+        Τα bytes του «self» περιλαμβάνουν τα bytes που δεσμεύθηκαν ή αποδεσμεύθηκαν
         όσο η συνάρτηση ήταν στο τέλος της στοίβας. Αν η συνάρτηση κλήθηκε σε άλλες
         συναρτήσεις, τότε τα bytes των άλλων συναρτήσεων δεν συμπεριλαμβάνονται.
-        Τα ατομικά bytes είναι χρήσιμα για να κατανοήσετε πού δεσμεύθηκε ή
+        Τα bytes του «self» είναι χρήσιμα για να κατανοήσετε πού δεσμεύθηκε ή
         αποδεσμεύθηκε μνήμη στο πρόγραμμα.
 
 ## Call tree "badges" (icons) with tooltips
@@ -197,27 +231,27 @@ CallTreeSidebar--call-node-details = Λεπτομέρειες κόμβου κλ�
 CallTreeSidebar--traced-running-time =
     .label = Ιχνηλατημένος χρόνος εκτέλεσης
 CallTreeSidebar--traced-self-time =
-    .label = Ιχνηλατημένος ιδιοχρόνος
+    .label = Ιχνηλατημένος χρόνος self
 CallTreeSidebar--running-time =
     .label = Χρόνος εκτέλεσης
 CallTreeSidebar--self-time =
-    .label = Iδιοχρόνος
+    .label = Χρόνος self
 CallTreeSidebar--running-samples =
     .label = Εκτελούμενα δείγματα
 CallTreeSidebar--self-samples =
-    .label = Ιδιοδείγματα
+    .label = Δείγματα self
 CallTreeSidebar--running-size =
     .label = Μέγεθος εκτέλεσης
 CallTreeSidebar--self-size =
-    .label = Ιδιομέγεθος
+    .label = Μέγεθος self
 CallTreeSidebar--categories = Κατηγορίες
 CallTreeSidebar--implementation = Υλοποίηση
 CallTreeSidebar--running-milliseconds = Χιλιοστά δευτερολέπτου εκτέλεσης
 CallTreeSidebar--running-sample-count = Εκτελούμενος αριθμός δειγμάτων
 CallTreeSidebar--running-bytes = Bytes εκτέλεσης
-CallTreeSidebar--self-milliseconds = Χιλιοστά δευτερολέπτου συνάρτησης
-CallTreeSidebar--self-sample-count = Αριθμός ιδιοδειγμάτων
-CallTreeSidebar--self-bytes = Ιδιο-bytes
+CallTreeSidebar--self-milliseconds = Χιλιοστά δευτερολέπτου self
+CallTreeSidebar--self-sample-count = Πλήθος δειγμάτων self
+CallTreeSidebar--self-bytes = Self bytes
 
 ## CompareHome
 ## This is used in the page to compare two profiles.
@@ -259,21 +293,22 @@ Details--error-boundary-message =
 
 # This message will always be displayed after another context-specific message.
 ErrorBoundary--report-error-to-developers-description =
-    Παρακαλώ αναφέρετε αυτό το ζήτημα στους προγραμματιστές, μαζί με το
-    πλήρες σφάλμα, όπως εμφανίζεται στην κονσόλα ιστού των εργαλείων ανάπτυξης.
+    Αναφέρετε αυτό το ζήτημα στους προγραμματιστές, μαζί με το πλήρες
+    σφάλμα, όπως εμφανίζεται στην κονσόλα ιστού των εργαλείων ανάπτυξης.
 # This is used in a call to action button, displayed inside the error box.
 ErrorBoundary--report-error-on-github = Αναφορά σφάλματος στο GitHub
 
-## Footer Links
+## Settings Menu
+## The settings popup opened from the cog icon in the top bar.
 
-FooterLinks--legal = Νομικά
-FooterLinks--Privacy = Απόρρητο
-FooterLinks--Cookies = Cookie
-FooterLinks--languageSwitcher--select =
+SettingsMenu--button =
+    .title = Ρυθμίσεις
+SettingsMenu--docs = Τεκμηρίωση
+SettingsMenu--legal = Νομικά
+SettingsMenu--privacy = Απόρρητο
+SettingsMenu--cookies = Cookie
+SettingsMenu--language-switcher =
     .title = Αλλαγή γλώσσας
-FooterLinks--hide-button =
-    .title = Απόκρυψη συνδέσμων υποσέλιδου
-    .aria-label = Απόκρυψη συνδέσμων υποσέλιδου
 
 ## FullTimeline
 ## The timeline component of the full view in the analysis UI at the top of the
@@ -300,7 +335,7 @@ Home--menu-button-instructions =
     επιδόσεων στο { -firefox-brand-name } και έπειτα, να το αναλύσετε και να το μοιραστείτε με το profiler.firefox.com.
 Home--profile-firefox-android-instructions =
     Μπορείτε επίσης να καταγράψετε προφίλ για το { -firefox-android-brand-name }.
-    Για περισσότερες πληροφορίες, παρακαλούμε συμβουλευτείτε την τεκμηρίωση:
+    Για περισσότερες πληροφορίες, συμβουλευτείτε την τεκμηρίωση:
     <a>Καταγραφή προφίλ του { -firefox-android-brand-name } απευθείας στη συσκευή</a>.
 # The word WebChannel should not be translated.
 # This message can be seen on https://main--perf-html.netlify.app/ in the tooltip
@@ -313,15 +348,22 @@ Home--web-channel-unavailable =
     Αυτή η διεργασία του εργαλείου προφίλ δεν μπόρεσε να συνδεθεί στο WebChannel. Αυτό συνήθως σημαίνει
     ότι εκτελείται σε διαφορετικό κεντρικό υπολογιστή από αυτόν που καθορίστηκε στην προτίμηση
     <code>devtools.performance.recording.ui-base-url</code>. Αν θέλετε να καταγράψετε νέα προφίλ
-    με αυτή τη διεργασία και να της δώσετε προγραμματικό έλεγχο του κουμπιού του μενού του εργαλείου,
+    με αυτήν τη διεργασία και να της δώσετε προγραμματικό έλεγχο του κουμπιού του μενού του εργαλείου,
     μπορείτε να μεταβείτε στο <code>about:config</code> και να αλλάξετε την προτίμηση.
 Home--record-instructions =
     Για να αρχίσει η καταγραφή προφίλ, κάντε κλικ στο αντίστοιχο κουμπί ή χρησιμοποιήστε
     τις συντομεύσεις πληκτρολογίου. Το εικονίδιο είναι μπλε κατά την καταγραφή ενός προφίλ.
     Πατήστε το <kbd>Καταγραφή</kbd> για να φορτώσετε τα δεδομένα στο profiler.firefox.com.
-Home--instructions-content =
-    Η καταγραφή των προφίλ επιδόσεων απαιτεί το <a>{ -firefox-brand-name }</a>.
+Home--instructions-content2 =
+    Η καταγραφή των προφίλ επιδόσεων απαιτεί το <a>{ -firefox-brand-name } για υπολογιστές</a>.
     Ωστόσο, τα υπάρχοντα προφίλ μπορούν να προβληθούν σε όλα τα σύγχρονα προγράμματα περιήγησης.
+Home--fenix-instructions-directly =
+    Μπορείτε να καταγράψετε προφίλ για το { -firefox-android-brand-name } απευθείας σε αυτήν τη συσκευή. Για
+    περισσότερες πληροφορίες, διαβάστε το <a>Καταγραφή προφίλ του { -firefox-android-brand-name } απευθείας στη συσκευή</a>.
+Home--fenix-instructions-remotely =
+    Μπορείτε επίσης να καταγράψετε προφίλ για το { -firefox-android-brand-name } απομακρυσμένα από το { -firefox-brand-name }
+    για υπολογιστές. Για περισσότερες πληροφορίες, συμβουλευτείτε την τεκμηρίωση:
+    <a>Απομακρυσμένη καταγραφή προφίλ του { -firefox-android-brand-name }</a>.
 Home--record-instructions-start-stop = Διακοπή και έναρξη δημιουργίας προφίλ
 Home--record-instructions-capture-load = Καταγραφή και φόρτωση προφίλ
 Home--profiler-motto = Καταγράψτε ένα προφίλ επιδόσεων. Αναλύστε το. Μοιραστείτε το. Κάντε ταχύτερο τον ιστό.
@@ -329,6 +371,7 @@ Home--additional-content-title = Φόρτωση υπαρχόντων προφί�
 Home--additional-content-content = Μπορείτε να <strong>σύρετε και να εναποθέσετε</strong> ένα αρχείο προφίλ εδώ για φόρτωση, ή:
 Home--compare-recordings-info = Μπορείτε επίσης να συγκρίνετε καταγραφές. <a>Άνοιγμα περιβάλλοντος σύγκρισης.</a>
 Home--your-recent-uploaded-recordings-title = Πρόσφατα μεταφορτωμένες καταγραφές
+Home--dark-mode-title = Σκουρόχρωμη λειτουργία
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
@@ -337,17 +380,29 @@ Home--load-files-from-other-tools2 =
     επιδόσεων του Chrome, το <androidstudio>Android Studio</androidstudio> ή οποιοδήποτε
     αρχείο των μορφών <dhat>dhat</dhat> ή <traceevent>Trace Event της Google</traceevent>.
     <write>Μάθετε πώς να γράψετε το δικό σας εργαλείο εισαγωγής</write>.
+Home--install-chrome-extension = Εγκατάσταση της επέκτασης για Chrome
+Home--chrome-extension-instructions =
+    Χρησιμοποιήστε την <a>επέκταση του { -profiler-brand-name } για Chrome</a>
+    για να καταγράψετε προφίλ επιδόσεων στο Chrome και να τα αναλύσετε στο
+    { -profiler-brand-name }. Εγκαταστήστε την επέκταση από το Chrome Web Store.
+Home--chrome-extension-recording-instructions =
+    Μόλις εγκατασταθεί, χρησιμοποιήστε το εικονίδιο της επέκτασης στη γραμμή
+    εργαλείων ή τις συντομεύσεις για να ξεκινήσετε και να διακόψετε την καταγραφή.
+    Μπορείτε επίσης να εξαγάγετε τα προφίλ και να τα φορτώσετε εδώ για λεπτομερή ανάλυση.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
 
-IdleSearchField--search-input =
-    .placeholder = Εισαγάγετε όρους φίλτρου
+# `/` here overrides Firefox's Type Ahead Find shortcut, which would
+# otherwise trigger an unhelpful find bar on top of the profiler UI.
+# The shortcut itself is not localizable.
+IdleSearchField--search-input2 =
+    .placeholder = Εισαγάγετε όρους φίλτρου (/)
 
 ## JsTracerSettings
 ## JSTracer is an experimental feature and it's currently disabled. See Bug 1565788.
 
-JsTracerSettings--show-only-self-time = Εμφάνιση μόνο ιδιοχρόνου
+JsTracerSettings--show-only-self-time = Εμφάνιση μόνο χρόνου self
     .title = Εμφάνιση μόνο του χρόνου που χρησιμοποιήθηκε σε κόμβο κλήσεων, αγνοώντας τους θυγατρικούς του.
 
 ## ListOfPublishedProfiles
@@ -411,6 +466,13 @@ MarkerContextMenu--select-the-sender-thread = Επιλέξτε το νήμα α�
 #   $filter (String) - Search string that will be used to filter the markers.
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = Απόρριψη δειγμάτων εκτός των δεικτών που αντιστοιχούν στο «<strong>{ $filter }</strong>»
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = Αντιγραφή πίνακα δεικτών ως απλού κειμένου
+MarkerCopyTableContextMenu--copy-table-as-markdown = Αντιγραφή πίνακα δεικτών ως Markdown
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
@@ -419,6 +481,14 @@ MarkerSettings--panel-search =
     .title = Εμφάνιση μόνο των σημαδιών που αντιστοιχούν σε ένα συγκεκριμένο όνομα
 MarkerSettings--marker-filters =
     .title = Φίλτρα δείκτη
+MarkerSettings--copy-table =
+    .title = Αντιγραφή πίνακα ως κειμένου
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = Ο αριθμός σειρών υπερβαίνει το όριο: { $rows } > { $maxRows }. Θα αντιγραφούν μόνο οι πρώτες { $maxRows } σειρές.
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -433,6 +503,16 @@ MarkerTable--duration = Διάρκεια
 MarkerTable--name = Όνομα
 MarkerTable--details = Λεπτομέρειες
 
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .aria-label = Εμφάνιση μόνο των αντίστοιχων δεικτών: «{ $filter }»
+    .title = Εμφάνιση μόνο των αντίστοιχων δεικτών: «{ $filter }»
+
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
 
@@ -440,14 +520,15 @@ MenuButtons--index--metaInfo-button =
     .label = Πληροφορίες προφίλ
 MenuButtons--index--full-view = Πλήρης προβολή
 MenuButtons--index--cancel-upload = Ακύρωση μεταφόρτωσης
-MenuButtons--index--share-upload =
-    .label = Μεταφόρτωση τοπικού προφίλ
-MenuButtons--index--share-re-upload =
-    .label = Νέα μεταφόρτωση
+MenuButtons--index--save =
+    .label = Αποθήκευση…
+MenuButtons--index--share =
+    .label = Κοινή χρήση…
+MenuButtons--index--reshare =
+    .label = Νέα κοινή χρήση…
 MenuButtons--index--share-error-uploading =
     .label = Σφάλμα μεταφόρτωσης
 MenuButtons--index--revert = Επιστροφή στο αρχικό προφίλ
-MenuButtons--index--docs = Έγγραφα
 MenuButtons--permalink--button =
     .label = Μόνιμος σύνδεσμος
 
@@ -464,7 +545,29 @@ MenuButtons--metaInfo--profile-not-symbolicated = Το προφίλ δεν εί�
 MenuButtons--metaInfo--resymbolicate-profile = Επανασυμβολισμός προφίλ
 MenuButtons--metaInfo--symbolicate-profile = Συμβολισμός προφίλ
 MenuButtons--metaInfo--attempting-resymbolicate = Απόπειρα επανασυμβολισμού προφίλ
-MenuButtons--metaInfo--currently-symbolicating = Γίνεται συμβολισμός προφίλ αυτή τη στιγμή
+MenuButtons--metaInfo--currently-symbolicating = Γίνεται συμβολισμός προφίλ αυτήν τη στιγμή
+MenuButtons--metaInfo--source-maps = Χάρτες πηγής:
+# The trailing ellipsis indicates that clicking the button opens a file picker.
+MenuButtons--metaInfo--apply-source-map = Εφαρμογή χάρτη πηγής…
+    .title = Φόρτωση αρχείου .map από το δίσκο για συμβολισμό ενός πακέτου JavaScript σε ελαχιστοποίηση, ανάκτησης ονομάτων αρχικών συναρτήσεων και τοποθεσιών πηγής.
+# Shown when the uploaded map could match more than one source and the user has
+# to choose which one it applies to.
+MenuButtons--metaInfo--source-map-choose-bundle = Επιλέξτε σε ποιο πακέτο θα εφαρμοστεί αυτός ο χάρτης πηγής:
+# Button to confirm the chosen source and apply the source map to it.
+MenuButtons--metaInfo--source-map-apply = Εφαρμογή
+# Button to dismiss the source chooser without symbolicating.
+MenuButtons--metaInfo--source-map-cancel = Ακύρωση
+# Shown after symbolication finished and original sources were resolved.
+# Variable:
+#   $filename (String) - The bundle source the source map was applied to.
+MenuButtons--metaInfo--source-map-success = Οι αρχικές πηγές επιλύθηκαν για { $filename }.
+# Shown after symbolication finished but no stack positions matched the map.
+# Variable:
+#   $filename (String) - The bundle source the source map was applied to.
+MenuButtons--metaInfo--source-map-no-match = Καμία θέση στοίβας στο { $filename } δεν ταιριάζει με αυτόν τον χάρτη πηγής.
+MenuButtons--metaInfo--source-map-error-invalid = Το επιλεγμένο αρχείο δεν είναι συμβατή πηγή χάρτη.
+MenuButtons--metaInfo--source-map-error-no-eligible = Αυτό το προφίλ δεν έχει πακέτα JS με URL χαρτών πηγής.
+MenuButtons--metaInfo--source-map-error-failed = Δεν ήταν δυνατή η εφαρμογή αυτού του χάρτη πηγής στο προφίλ.
 MenuButtons--metaInfo--cpu-model = Μοντέλο CPU:
 MenuButtons--metaInfo--cpu-cores = Πυρήνες CPU:
 MenuButtons--metaInfo--main-memory = Κύρια μνήμη:
@@ -476,11 +579,16 @@ MenuButtons--index--hide-moreInfo-button = Εμφάνιση λιγότερων
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-        [one] { $physicalCPUs } φυσικός πυρήνας
-       *[other] { $physicalCPUs } φυσικοί πυρήνες
-    }, { $logicalCPUs ->
-        [one] { $logicalCPUs } λογικός πυρήνας
-       *[other] { $logicalCPUs } λογικοί πυρήνες
+        [one]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } φυσικός πυρήνας, { $logicalCPUs } λογικός πυρήνας
+               *[other] { $physicalCPUs } φυσικός πυρήνας, { $logicalCPUs } λογικοί πυρήνες
+            }
+       *[other]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } φυσικοί πυρήνες, { $logicalCPUs } λογικός πυρήνας
+               *[other] { $physicalCPUs } φυσικοί πυρήνες, { $logicalCPUs } λογικοί πυρήνες
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -504,6 +612,8 @@ MenuButtons--metaInfo--profiling-started = Έναρξη καταγραφής:
 MenuButtons--metaInfo--profiling-session = Διάρκεια καταγραφής:
 MenuButtons--metaInfo--main-process-started = Έναρξη κύριας διεργασίας:
 MenuButtons--metaInfo--main-process-ended = Τέλος κύριας διεργασίας:
+MenuButtons--metaInfo--file-name = Όνομα αρχείου:
+MenuButtons--metaInfo--file-size = Μέγεθος αρχείου:
 MenuButtons--metaInfo--interval = Διάστημα:
 MenuButtons--metaInfo--buffer-capacity = Χωρητικότητα buffer:
 MenuButtons--metaInfo--buffer-duration = Διάρκεια buffer:
@@ -519,7 +629,8 @@ MenuButtons--metaInfo--buffer-duration-seconds =
 MenuButtons--metaInfo--buffer-duration-unlimited = Απεριόριστη
 MenuButtons--metaInfo--application = Εφαρμογή
 MenuButtons--metaInfo--name-and-version = Όνομα και έκδοση:
-MenuButtons--metaInfo--application-uptime = Χρόνος λειτουργίας:
+# The time between application startup and when the profiler was started
+MenuButtons--metaInfo--application-uptime2 = Χρόνος λειτουργίας:
 MenuButtons--metaInfo--update-channel = Κανάλι ενημερώσεων:
 MenuButtons--metaInfo--build-id = ID δομής:
 MenuButtons--metaInfo--build-type = Τύπος δομής:
@@ -541,9 +652,9 @@ MenuButtons--metaInfo--abi = ABI:
 MenuButtons--metaInfo--visual-metrics = Οπτικές μετρήσεις
 MenuButtons--metaInfo--speed-index = Δείκτης ταχύτητας:
 # “Perceptual” is the name of an index provided by sitespeed.io, and should be kept in English.
-MenuButtons--metaInfo--perceptual-speed-index = Δείκτης "Perceptual Speed":
+MenuButtons--metaInfo--perceptual-speed-index = Δείκτης «Perceptual Speed»:
 # “Contentful” is the name of an index provided by sitespeed.io, and should be kept in English.
-MenuButtons--metaInfo--contentful-speed-Index = Δείκτης "Contentful Speed":
+MenuButtons--metaInfo--contentful-speed-Index = Δείκτης «Contentful Speed»:
 MenuButtons--metaInfo-renderRowOfList-label-features = Λειτουργίες:
 MenuButtons--metaInfo-renderRowOfList-label-threads-filter = Φίλτρο νημάτων:
 MenuButtons--metaInfo-renderRowOfList-label-extensions = Επεκτάσεις:
@@ -582,9 +693,15 @@ MenuButtons--publish--renderCheckbox-label-preference = Συμπερίληψη �
 MenuButtons--publish--renderCheckbox-label-private-browsing = Συμπερίληψη δεδομένων από τα παράθυρα ιδιωτικής περιήγησης
 MenuButtons--publish--renderCheckbox-label-private-browsing-warning-image =
     .title = Αυτό το προφίλ περιέχει δεδομένα ιδιωτικής περιήγησης
-MenuButtons--publish--reupload-performance-profile = Νέα μεταφόρτωση προφίλ επιδόσεων
+MenuButtons--publish--renderCheckbox-label-argument-values = Συμπερίληψη τιμών ορίσματος της λειτουργίας καταγραφής εκτέλεσης JavaScript
+MenuButtons--publish--renderCheckbox-label-argument-values-warning-image =
+    .title = Αυτό το προφίλ περιέχει τιμές ορίσματος συνάρτησης που έχουν καταγραφεί από τη σελίδα, οι οποίες ενδέχεται να περιλαμβάνουν προσωπικά δεδομένα.
 MenuButtons--publish--share-performance-profile = Κοινή χρήση προφίλ επιδόσεων
+MenuButtons--publish--reshare-performance-profile = Νέα κοινή χρήση προφίλ επιδόσεων
+MenuButtons--publish--save-performance-profile = Αποθήκευση προφίλ επιδόσεων
+MenuButtons--publish--local-profile-description = Αυτό το προφίλ δεν έχει μεταφορτωθεί και θα χαθεί όταν κλείσετε αυτήν την καρτέλα. Για να το διατηρήσετε, αποθηκεύστε το στον υπολογιστή σας ή μεταφορτώστε το με την επιλογή «Κοινή χρήση».
 MenuButtons--publish--info-description = Ανεβάστε το προφίλ σας και κάντε το προσβάσιμο σε οποιονδήποτε έχει τον σύνδεσμο.
+MenuButtons--publish--download-info-description = Αποθηκεύστε αυτό το προφίλ ως αρχείο στον υπολογιστή σας.
 MenuButtons--publish--info-description-default = Από προεπιλογή, αφαιρούνται τα προσωπικά σας δεδομένα.
 MenuButtons--publish--info-description-firefox-nightly2 = Αυτό το προφίλ είναι από το { -firefox-nightly-brand-name }, επομένως συμπεριλαμβάνονται οι περισσότερες πληροφορίες από προεπιλογή.
 MenuButtons--publish--include-additional-data = Συμπερίληψη επιπλέον δεδομένων που ίσως να είναι αναγνωρίσιμα
@@ -593,7 +710,7 @@ MenuButtons--publish--upload-title = Μεταφόρτωση προφίλ…
 MenuButtons--publish--cancel-upload = Ακύρωση μεταφόρτωσης
 MenuButtons--publish--message-something-went-wrong = Ωχ όχι, κάτι πήγε στραβά κατά τη μεταφόρτωση του προφίλ.
 MenuButtons--publish--message-try-again = Δοκιμή ξανά
-MenuButtons--publish--download = Λήψη
+MenuButtons--publish--save = Αποθήκευση
 MenuButtons--publish--compressing = Συμπίεση…
 MenuButtons--publish--error-while-compressing = Σφάλμα κατά τη συμπίεση, δοκιμάστε να καταργήσετε μερικές επιλογές για να μειώσετε το μέγεθος του προφίλ.
 
@@ -622,6 +739,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 ## The component that is used for all the search input hints in the application.
 
 PanelSearch--search-field-hint = Ξέρατε ότι μπορείτε να χρησιμοποιήσετε το κόμμα (,) για αναζήτηση με πολλαπλούς όρους;
+
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = Επεξεργασία ονόματος προφίλ
+ProfileName--edit-profile-name-input =
+    .aria-label = Όνομα προφίλ
+    .title = Επεξεργασία ονόματος προφίλ
 
 ## Profile Delete Button
 
@@ -670,6 +795,7 @@ ProfileFilterNavigator--full-range-with-duration = Πλήρες εύρος ({ $f
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Εισαγωγή και επεξεργασία προφίλ…
 ProfileLoaderAnimation--loading-unpublished = Εισαγωγή προφίλ απευθείας από το { -firefox-brand-name }…
 ProfileLoaderAnimation--loading-from-file = Ανάγνωση αρχείου και επεξεργασία προφίλ…
 ProfileLoaderAnimation--loading-local = Δεν έχει υλοποιηθεί ακόμα.
@@ -700,8 +826,8 @@ ServiceWorkerManager--updated-while-not-ready =
     αυτή η σελίδα. Ενδέχεται να δείτε δυσλειτουργίες.
 ServiceWorkerManager--new-version-is-ready = Έγινε λήψη μιας νέας έκδοσης της εφαρμογής και είναι έτοιμη για χρήση.
 ServiceWorkerManager--hide-notice-button =
-    .title = Απόκρυψη σημείωσης επαναφόρτωσης
     .aria-label = Απόκρυψη σημείωσης επαναφόρτωσης
+    .title = Απόκρυψη σημείωσης επαναφόρτωσης
 
 ## StackSettings
 ## This is the settings component that is used in Call Tree, Flame Graph and Stack
@@ -709,8 +835,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = Όλα τα καρέ
     .title = Να μην γίνεται φιλτράρισμα των καρέ στοίβας
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Εμφάνιση μόνο των καρέ στοίβας που σχετίζονται με την εκτέλεση της JavaScript
+StackSettings--implementation-script = Δέσμη ενεργειών
+    .title = Εμφάνιση μόνο των καρέ στοίβας που σχετίζονται με την εκτέλεση της δέσμης ενεργειών
 StackSettings--implementation-native2 = Εγγενές
     .title = Εμφάνιση μόνο των καρέ στοίβας για εγγενή κώδικα
 # This label is displayed in the marker chart and marker table panels only.
@@ -730,10 +856,13 @@ StackSettings--call-tree-strategy-native-deallocations-sites = Ιστότοπο�
     .title = Περίληψη με τα bytes της μνήμης που απελευθερώθηκαν, κατά τον ιστότοπο όπου αποδεσμεύθηκε η μνήμη
 StackSettings--invert-call-stack = Αναστροφή στοίβας κλήσεων
     .title = Ταξινόμηση κατά χρόνο που χρησιμοποιήθηκε σε κόμβο κλήσεων, αγνοώντας τους θυγατρικούς του.
+StackSettings--include-idle-samples = Συμπερίληψη αδρανών δειγμάτων
+    .title = Απενεργοποιήστε την επιλογή για να αποκρύψετε τα δείγματα των οποίων το πλαίσιο φύλλου είναι στην κατηγορία «Αδρανή».
 StackSettings--show-user-timing = Εμφάνιση χρονισμού χρήστη
+StackSettings--use-stack-chart-same-widths = Χρήση του ίδιου πλάτους για κάθε στοίβα
 StackSettings--panel-search =
     .label = Φιλτράρισμα στοιβών:
-    .title = Εμφάνιση μόνο στοιβών που περιέχουν συνάρτηση της οποίας το όνομα αντιστοιχεί σε αυτή την υποσυμβολοσειρά
+    .title = Εμφάνιση μόνο στοιβών που περιέχουν συνάρτηση της οποίας το όνομα αντιστοιχεί σε αυτήν την υποσυμβολοσειρά
 
 ## Tab Bar for the bottom half of the analysis UI.
 
@@ -760,12 +889,12 @@ TrackContextMenu--only-show-this-process = Εμφάνιση μόνο αυτής 
 # This is used as the context menu item to show only the given track.
 # Variables:
 #   $trackName (String) - Name of the selected track to isolate.
-TrackContextMenu--only-show-track = Εμφάνιση μόνο του “{ $trackName }”
+TrackContextMenu--only-show-track = Εμφάνιση μόνο του «{ $trackName }»
 TrackContextMenu--hide-other-screenshots-tracks = Απόκρυψη άλλων κομματιών του Screenshots
 # This is used as the context menu item to hide the given track.
 # Variables:
 #   $trackName (String) - Name of the selected track to hide.
-TrackContextMenu--hide-track = Απόκρυψη του “{ $trackName }”
+TrackContextMenu--hide-track = Απόκρυψη του «{ $trackName }»
 TrackContextMenu--show-all-tracks = Εμφάνιση όλων των κομματιών
 TrackContextMenu--show-local-tracks-in-process = Εμφάνιση όλων των κομματιών σε αυτήν τη διεργασία
 # This is used as the context menu item to hide all tracks of the selected track's type.
@@ -795,9 +924,26 @@ TrackNameButton--hide-process =
 ## the UI. To learn more about it, visit:
 ## https://profiler.firefox.com/docs/#/./memory-allocations?id=memory-track
 
-TrackMemoryGraph--relative-memory-at-this-time = σχετική μνήμη αυτήν τη στιγμή
-TrackMemoryGraph--memory-range-in-graph = εύρος μνήμης στο γράφημα
-TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample = κατανομές και αποδεσμεύσεις από το προηγούμενο δείγμα
+# Variables:
+#   $value (String) - the relative memory at this time (e.g. "5MB")
+TrackMemoryGraph--relative-memory-at-this-time2 = { $value }
+    .label = σχετική μνήμη τη συγκεκριμένη στιγμή
+# Variables:
+#   $value (String) - the memory range across the graph (e.g. "5MB")
+TrackMemoryGraph--memory-range-in-graph2 = { $value }
+    .label = εύρος μνήμης στο γράφημα
+# Variables:
+#   $value (String) - count of allocations and deallocations since the previous sample
+TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample2 = { $value }
+    .label = εκχωρήσεις και αποδεσμεύσεις από το προηγούμενο δείγμα
+
+## TrackProcessCPUGraph
+## This is used to show the CPU usage of a process over time in the timeline.
+
+# Variables:
+#   $value (String) - the CPU usage at this sample (e.g. "50%")
+TrackProcessCPUGraph--cpu = { $value }
+    .label = CPU
 
 ## TrackPower
 ## This is used to show the power used by the CPU and other chips in a computer,
@@ -824,6 +970,11 @@ TrackPower--tooltip-power-watt = { $value } W
 #   $value (String) - the power value at this location
 TrackPower--tooltip-power-milliwatt = { $value } mW
     .label = Ισχύς
+# This is used in the tooltip when the instant power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-power-microwatt = { $value } μW
+    .label = Ισχύς
 # This is used in the tooltip when the power value uses the kilowatt unit.
 # Variables:
 #   $value (String) - the power value at this location
@@ -838,6 +989,11 @@ TrackPower--tooltip-average-power-watt = { $value } W
 # Variables:
 #   $value (String) - the power value at this location
 TrackPower--tooltip-average-power-milliwatt = { $value } mW
+    .label = Μέση ισχύς στην τρέχουσα επιλογή
+# This is used in the tooltip when the power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-average-power-microwatt = { $value } μW
     .label = Μέση ισχύς στην τρέχουσα επιλογή
 # This is used in the tooltip when the energy used in the current range uses the
 # kilowatt-hour unit.
@@ -957,7 +1113,7 @@ TrackSearchField--search-input =
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=collapse
 # Variables:
 #   $item (String) - Name of the current thread. E.g.: Web Content.
-TransformNavigator--complete = Ολοκλήρωση “{ $item }”
+TransformNavigator--complete = Ολοκληρωμένο «{ $item }»
 # "Collapse resource" transform.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=collapse
 # Variables:
@@ -973,6 +1129,12 @@ TransformNavigator--focus-subtree = Εστίαση κόμβου: { $item }
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
 TransformNavigator--focus-function = Εστίαση: { $item }
+# "Focus self" transform.
+# See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-on-function-self
+# Also see the translation note above CallNodeContextMenu--transform-focus-self.
+# Variables:
+#   $item (String) - Name of the function that transform applied to.
+TransformNavigator--focus-self = Εστίαση στο self: { $item }
 # "Focus category" transform. The word "Focus" has the meaning of an adjective here.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-category
 # Variables:
@@ -1044,6 +1206,12 @@ BottomBox--assembly-code-not-available-title = Ο κώδικας assembly δεν
 # Elements:
 #   <a>link text</a> - A link to the github issue about supported scenarios.
 BottomBox--assembly-code-not-available-text = Δείτε το <a>ζήτημα #4520</a> για υποστηριζόμενα σενάρια και προγραμματισμένες βελτιώσεις.
+# The toggle button for making the bottom box fullscreen.
+BottomBox--hide-fullscreen =
+    .title = Έξοδος από πλήρη οθόνη
+# The toggle button for making the bottom box fullscreen.
+BottomBox--show-fullscreen =
+    .title = Πλήρης οθόνη
 SourceView--close-button =
     .title = Κλείσιμο προβολής πηγής
 
@@ -1100,6 +1268,13 @@ SourceView--not-in-archive-error-when-obtaining-source = Το αρχείο «{ $
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = Δεν ήταν δυνατή η ανάλυση του αρχείου στο { $url }: { $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = Το πρόγραμμα περιήγησης δεν μπόρεσε να λάβει το αρχείο πηγαίου κώδικα για το { $url } με το sourceUuid { $sourceUuid }: { $errorMessage }.
 
 ## Toggle buttons in the top right corner of the bottom box
 
@@ -1111,6 +1286,17 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = Απόκρυψη προβολής assembly
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = Προηγούμενο
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = Επόμενο
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = { $current } από { $total }
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.

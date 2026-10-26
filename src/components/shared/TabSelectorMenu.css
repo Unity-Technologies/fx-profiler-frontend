@@ -3,6 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 .TabSelectorMenu {
+  background-color: var(--menu-background-color);
+  color: var(--menu-foreground-color);
+
   /* Make it scrollable if the tab list is too long. */
   overflow-y: auto;
 }
@@ -16,4 +19,8 @@
   )::before {
   /* Move the checkmark to inline-start instead of right, as it's logically better. */
   inset-inline: 8px 0;
+}
+
+.tabSelectorMenuItem .nodeIcon {
+  margin-inline-end: 10px;
 }

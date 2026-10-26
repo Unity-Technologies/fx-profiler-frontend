@@ -1,8 +1,0 @@
-src/types/libdef/npm
-docs-user
-src/test/fixtures/upgrades
-res/zee-worker.js
-dist
-coverage
-taskcluster/
-.taskcluster.yml

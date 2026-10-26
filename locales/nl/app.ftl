@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -27,9 +21,20 @@ AppHeader--app-header = <header>{ -profiler-brand-name }</header> – <subheader
 AppHeader--github-icon =
     .title = Naar onze Git-repository (deze wordt in een nieuw venster geopend)
 
+## ThemeToggle
+## They are used at the top right side of the home page to switch between themes.
+
+ThemeToggle--system =
+    .title = Voorkeur systeemthema volgen
+ThemeToggle--light =
+    .title = Licht thema gebruiken
+ThemeToggle--dark =
+    .title = Donker thema gebruiken
+
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Kan het profiel niet importeren.
 AppViewRouter--error-unpublished = Kan het profiel niet ophalen van { -firefox-brand-name }.
 AppViewRouter--error-from-file = Kan het bestand niet lezen of het profiel erin ontleden.
 AppViewRouter--error-local = Nog niet geïmplementeerd.
@@ -44,8 +49,21 @@ AppViewRouter--error-from-localhost-url-safari =
     profielen van de lokale computer in deze browser importeren. Open in plaats daarvan
     deze pagina in { -firefox-brand-name } of Chrome.
     .title = Safari kan geen lokale profielen importeren
+# This error message is displayed when the profile is in a newer format version
+# than this build of the Profiler is able to read.
+AppViewRouter--error-profile-version =
+    Dit profiel gebruikt een indeling die niet door deze versie van { -profiler-brand-name } wordt ondersteund.
+    Probeer de pagina te vernieuwen om te controleren of er een update beschikbaar is voor { -profiler-brand-name }.
 AppViewRouter--route-not-found--home =
     .specialMessage = De URL die u probeerde te bereiken, werd niet herkend.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (inline geplaatst)
+    .title = { $function } is door de compiler inline in de aanroepomgeving geplaatst
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -76,6 +94,21 @@ CallNodeContextMenu--transform-focus-function = Focussen op functie
     .title = { CallNodeContextMenu--transform-focus-function-title }
 CallNodeContextMenu--transform-focus-function-inverted = Focussen op functie (omgekeerd)
     .title = { CallNodeContextMenu--transform-focus-function-title }
+
+## The translation for "self" in these strings should match the translation used
+## in CallTree--samples-self and CallTree--bytes-self. Alternatively it can be
+## translated as "self values" or "self time" (though "self time" is less desirable
+## because this menu item is also shown in "bytes" mode).
+
+CallNodeContextMenu--transform-focus-self-title =
+    Focussen op zichzelf lijkt op focussen op een functie, maar behoudt alleen monsters
+    die bijdragen aan de zelftijd van de functie. Monsters in aanroepen
+    worden verwijderd, en de aanroepboom wordt opnieuw geroot naar de functie met focus.
+CallNodeContextMenu--transform-focus-self = Alleen focussen op zelf
+    .title = { CallNodeContextMenu--transform-focus-self-title }
+
+##
+
 CallNodeContextMenu--transform-focus-subtree = Alleen focussen op substructuur
     .title =
         Als u op een substructuur focust, wordt elk voorbeeld dat dat specifieke deel
@@ -120,6 +153,7 @@ CallNodeContextMenu--searchfox = De functienaam op Searchfox opzoeken
 CallNodeContextMenu--copy-function-name = Functienaam kopiëren
 CallNodeContextMenu--copy-script-url = Script-URL kopiëren
 CallNodeContextMenu--copy-stack = Stack kopiëren
+CallNodeContextMenu--show-the-function-in-devtools = Functie tonen in DevTools
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -268,16 +302,17 @@ ErrorBoundary--report-error-to-developers-description =
 # This is used in a call to action button, displayed inside the error box.
 ErrorBoundary--report-error-on-github = De fout op GitHub melden
 
-## Footer Links
+## Settings Menu
+## The settings popup opened from the cog icon in the top bar.
 
-FooterLinks--legal = Juridisch
-FooterLinks--Privacy = Privacy
-FooterLinks--Cookies = Cookies
-FooterLinks--languageSwitcher--select =
+SettingsMenu--button =
+    .title = Instellingen
+SettingsMenu--docs = Documentatie
+SettingsMenu--legal = Juridisch
+SettingsMenu--privacy = Privacy
+SettingsMenu--cookies = Cookies
+SettingsMenu--language-switcher =
     .title = Taal wijzigen
-FooterLinks--hide-button =
-    .title = Voettekstkoppelingen verbergen
-    .aria-label = Voettekstkoppelingen verbergen
 
 ## FullTimeline
 ## The timeline component of the full view in the analysis UI at the top of the
@@ -323,9 +358,16 @@ Home--record-instructions =
     Klik om te starten met het maken van een profiel op de profielknop of gebruik de
     sneltoetsen. Het pictogram is blauw als er een profiel wordt opgenomen.
     Klik op <kbd>Vastleggen</kbd> om de gegevens in profiler.firefox.com te laden.
-Home--instructions-content =
-    Het opnemen van prestatieprofielen vereist <a>{ -firefox-brand-name }</a>.
+Home--instructions-content2 =
+    Het opnemen van prestatieprofielen vereist <a>{ -firefox-brand-name } voor desktop</a>.
     Bestaande profielen kunnen echter bekeken worden in elke moderne browser.
+Home--fenix-instructions-directly =
+    { -firefox-android-brand-name } kan rechtstreeks op dit apparaat worden geprofileerd. Lees voor
+    meer informatie <a>{ -firefox-android-brand-name } rechtstreeks op apparaat profileren</a>.
+Home--fenix-instructions-remotely =
+    U kunt { -firefox-android-brand-name } ook op afstand vanuit { -firefox-brand-name }
+    voor desktop profileren. Raadpleeg deze documentatie voor meer informatie:
+    <a>{ -firefox-android-brand-name } op afstand profileren</a>.
 Home--record-instructions-start-stop = Profileren stoppen en starten
 Home--record-instructions-capture-load = Profiel vastleggen en laden
 Home--profiler-motto = Leg een prestatieprofiel vast. Analyseer het. Deel het. Maak het internet sneller.
@@ -333,6 +375,7 @@ Home--additional-content-title = Bestaande profielen laden
 Home--additional-content-content = U kunt een profielbestand hierheen <strong>verslepen</strong> om het te laden, of:
 Home--compare-recordings-info = U kunt ook opnamen vergelijken. <a>De vergelijkingsinterface openen.</a>
 Home--your-recent-uploaded-recordings-title = Uw onlangs geüploade opnamen
+Home--dark-mode-title = Donkere modus
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
@@ -342,12 +385,24 @@ Home--load-files-from-other-tools2 =
     elk bestand dat de <dhat>dhat-indeling</dhat> of de <traceevent>Trace Event-indeling
     van Google</traceevent> gebruikt. <write>Ontdek hoe u uw eigen
     importroutine schrijft</write>.
+Home--install-chrome-extension = De Chrome-extensie installeren
+Home--chrome-extension-instructions =
+    Gebruik de <a>{ -profiler-brand-name }-extensie voor Chrome</a>
+    om prestatieprofielen in Chrome vast te leggen en ze in de
+    { -profiler-brand-name } te analyseren. Installeer de extensie vanuit de Chrome Web Store.
+Home--chrome-extension-recording-instructions =
+    Gebruik na installatie het werkbalkpictogram van de
+    extensie of de snelkoppelingen om het profileren te starten en te stoppen. U kunt ook
+    profielen exporteren en deze hier laden voor gedetailleerde analyse.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
 
-IdleSearchField--search-input =
-    .placeholder = Voer filtertermen in
+# `/` here overrides Firefox's Type Ahead Find shortcut, which would
+# otherwise trigger an unhelpful find bar on top of the profiler UI.
+# The shortcut itself is not localizable.
+IdleSearchField--search-input2 =
+    .placeholder = Voer filtertermen in (/)
 
 ## JsTracerSettings
 ## JSTracer is an experimental feature and it's currently disabled. See Bug 1565788.
@@ -416,6 +471,13 @@ MarkerContextMenu--select-the-sender-thread = Selecteer de afzenderthread ‘<st
 #   $filter (String) - Search string that will be used to filter the markers.
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = Samples buiten markeringen overeenkomend met ‘<strong>{ $filter }</strong>’ buiten beschouwing laten
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = Markeringstabel als platte tekst kopiëren
+MarkerCopyTableContextMenu--copy-table-as-markdown = Markeringstabel als Markdown kopiëren
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
@@ -424,6 +486,14 @@ MarkerSettings--panel-search =
     .title = Alleen markeringen tonen die overeenkomen met een bepaalde naam
 MarkerSettings--marker-filters =
     .title = Markeringsfilters
+MarkerSettings--copy-table =
+    .title = Tabel als tekst kopiëren
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = Het aantal rijen overschrijdt de limiet: { $rows } > { $maxRows }. Alleen de eerste { $maxRows } rijen worden gekopieerd.
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -438,6 +508,16 @@ MarkerTable--duration = Duur
 MarkerTable--name = Naam
 MarkerTable--details = Details
 
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .aria-label = Alleen markeringen tonen die overeenkomen met: ‘{ $filter }’
+    .title = Alleen markeringen tonen die overeenkomen met: ‘{ $filter }’
+
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
 
@@ -445,14 +525,15 @@ MenuButtons--index--metaInfo-button =
     .label = Profielinfo
 MenuButtons--index--full-view = Volledig beeld
 MenuButtons--index--cancel-upload = Uploaden annuleren
-MenuButtons--index--share-upload =
-    .label = Lokaal profiel uploaden
-MenuButtons--index--share-re-upload =
-    .label = Opnieuw uploaden
+MenuButtons--index--save =
+    .label = Opslaan…
+MenuButtons--index--share =
+    .label = Delen…
+MenuButtons--index--reshare =
+    .label = Opnieuw delen…
 MenuButtons--index--share-error-uploading =
     .label = Fout bij uploaden
 MenuButtons--index--revert = Terug naar origineel profiel
-MenuButtons--index--docs = Documentatie
 MenuButtons--permalink--button =
     .label = Permalink
 
@@ -470,6 +551,28 @@ MenuButtons--metaInfo--resymbolicate-profile = Profiel opnieuw symboliseren
 MenuButtons--metaInfo--symbolicate-profile = Profiel symboliseren
 MenuButtons--metaInfo--attempting-resymbolicate = Poging tot hersymboliseren profiel
 MenuButtons--metaInfo--currently-symbolicating = Profiel wordt gesymboliseerd
+MenuButtons--metaInfo--source-maps = Bronkaarten:
+# The trailing ellipsis indicates that clicking the button opens a file picker.
+MenuButtons--metaInfo--apply-source-map = Bronkaart toepassen…
+    .title = Een .map-bestand van uw schijf laden om een geminimaliseerde JavaScript-bundel te symboliseren, om oorspronkelijke functienamen en bronlocaties te herstellen.
+# Shown when the uploaded map could match more than one source and the user has
+# to choose which one it applies to.
+MenuButtons--metaInfo--source-map-choose-bundle = Kies op welke bundel deze bronkaart van toepassing is:
+# Button to confirm the chosen source and apply the source map to it.
+MenuButtons--metaInfo--source-map-apply = Toepassen
+# Button to dismiss the source chooser without symbolicating.
+MenuButtons--metaInfo--source-map-cancel = Annuleren
+# Shown after symbolication finished and original sources were resolved.
+# Variable:
+#   $filename (String) - The bundle source the source map was applied to.
+MenuButtons--metaInfo--source-map-success = Oorspronkelijke bronnen voor { $filename } opgelost.
+# Shown after symbolication finished but no stack positions matched the map.
+# Variable:
+#   $filename (String) - The bundle source the source map was applied to.
+MenuButtons--metaInfo--source-map-no-match = Geen enkele stackpositie in { $filename } komt overeen met deze bronkaart.
+MenuButtons--metaInfo--source-map-error-invalid = Het geselecteerde bestand is geen geldige bronkaart.
+MenuButtons--metaInfo--source-map-error-no-eligible = Dit profiel heeft geen JS-bundels met URL’s van bronkaarten.
+MenuButtons--metaInfo--source-map-error-failed = Kan deze bronkaart niet toepassen op het profiel.
 MenuButtons--metaInfo--cpu-model = CPU-model:
 MenuButtons--metaInfo--cpu-cores = CPU-kernen:
 MenuButtons--metaInfo--main-memory = Hoofdgeheugen:
@@ -481,11 +584,16 @@ MenuButtons--index--hide-moreInfo-button = Minder tonen
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-        [one] { $physicalCPUs } fysieke kern
-       *[other] { $physicalCPUs } fysieke kernen
-    },{ $logicalCPUs ->
-        [one] { $logicalCPUs } logische kern
-       *[other] { $logicalCPUs } logische kernen
+        [one]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } fysieke kern,{ $logicalCPUs } logische kern
+               *[other] { $physicalCPUs } fysieke kern,{ $logicalCPUs } logische kernen
+            }
+       *[other]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } fysieke kernen,{ $logicalCPUs } logische kern
+               *[other] { $physicalCPUs } fysieke kernen,{ $logicalCPUs } logische kernen
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -509,6 +617,8 @@ MenuButtons--metaInfo--profiling-started = Opname gestart:
 MenuButtons--metaInfo--profiling-session = Opnameduur:
 MenuButtons--metaInfo--main-process-started = Hoofdproces gestart:
 MenuButtons--metaInfo--main-process-ended = Hoofdproces beëindigd:
+MenuButtons--metaInfo--file-name = Bestandsnaam:
+MenuButtons--metaInfo--file-size = Bestandsgrootte:
 MenuButtons--metaInfo--interval = Interval:
 MenuButtons--metaInfo--buffer-capacity = Buffercapaciteit:
 MenuButtons--metaInfo--buffer-duration = Bufferduur:
@@ -524,7 +634,8 @@ MenuButtons--metaInfo--buffer-duration-seconds =
 MenuButtons--metaInfo--buffer-duration-unlimited = Onbeperkt
 MenuButtons--metaInfo--application = Toepassing
 MenuButtons--metaInfo--name-and-version = Naam en versie:
-MenuButtons--metaInfo--application-uptime = Uptime:
+# The time between application startup and when the profiler was started
+MenuButtons--metaInfo--application-uptime2 = Uptime:
 MenuButtons--metaInfo--update-channel = Updatekanaal:
 MenuButtons--metaInfo--build-id = Build-ID:
 MenuButtons--metaInfo--build-type = Buildtype:
@@ -580,16 +691,22 @@ MenuButtons--metaOverheadStatistics-profiled-duration = Geprofileerde duur:
 MenuButtons--publish--renderCheckbox-label-hidden-threads = Verborgen threads opnemen
 MenuButtons--publish--renderCheckbox-label-include-other-tabs = De gegevens van andere tabbladen opnemen
 MenuButtons--publish--renderCheckbox-label-hidden-time = Verborgen tijdsbereik opnemen
-MenuButtons--publish--renderCheckbox-label-include-screenshots = Schermafdrukken opnemen
+MenuButtons--publish--renderCheckbox-label-include-screenshots = Schermafbeeldingen opnemen
 MenuButtons--publish--renderCheckbox-label-resource = Hulpbron-URL’s en -paden opnemen
 MenuButtons--publish--renderCheckbox-label-extension = Extensie-informatie opnemen
 MenuButtons--publish--renderCheckbox-label-preference = Voorkeurswaarden opnemen
 MenuButtons--publish--renderCheckbox-label-private-browsing = De gegevens van privénavigatievensters opnemen
 MenuButtons--publish--renderCheckbox-label-private-browsing-warning-image =
     .title = Dit profiel bevat privénavigatiegegevens
-MenuButtons--publish--reupload-performance-profile = Prestatieprofiel opnieuw uploaden
+MenuButtons--publish--renderCheckbox-label-argument-values = Argumentwaarden voor de traceerfunctie voor uitvoering van JavaScript opnemen
+MenuButtons--publish--renderCheckbox-label-argument-values-warning-image =
+    .title = Dit profiel bevat waarden, opgenomen vanaf de pagina voor functieargumenten, die persoonlijke gegevens kan bevatten
 MenuButtons--publish--share-performance-profile = Prestatieprofiel delen
+MenuButtons--publish--reshare-performance-profile = Prestatieprofiel opnieuw delen
+MenuButtons--publish--save-performance-profile = Prestatieprofiel opslaan
+MenuButtons--publish--local-profile-description = Dit profiel is niet geüpload en zal verloren gaan wanneer u dit tabblad sluit. Sla het op op uw computer of upload het met Delen om het te behouden.
 MenuButtons--publish--info-description = Upload uw profiel en maak het met de koppeling toegankelijk voor iedereen.
+MenuButtons--publish--download-info-description = Dit profiel als een bestand op uw computer opslaan.
 MenuButtons--publish--info-description-default = Standaard worden uw persoonlijke gegevens verwijderd.
 MenuButtons--publish--info-description-firefox-nightly2 = Dit profiel is van { -firefox-nightly-brand-name }, dus standaard worden de meeste gegevens opgenomen.
 MenuButtons--publish--include-additional-data = Aanvullende gegevens die identificeerbaar kunnen zijn toevoegen
@@ -598,7 +715,7 @@ MenuButtons--publish--upload-title = Profiel uploaden…
 MenuButtons--publish--cancel-upload = Uploaden annuleren
 MenuButtons--publish--message-something-went-wrong = O jee, er is iets misgegaan bij het uploaden van het profiel.
 MenuButtons--publish--message-try-again = Opnieuw proberen
-MenuButtons--publish--download = Downloaden
+MenuButtons--publish--save = Opslaan
 MenuButtons--publish--compressing = Comprimeren…
 MenuButtons--publish--error-while-compressing = Fout bij comprimeren. Probeer enkele selectievakjes uit te schakelen om de profielgrootte te verkleinen.
 
@@ -627,6 +744,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 ## The component that is used for all the search input hints in the application.
 
 PanelSearch--search-field-hint = Wist u dat u een komma (,) kunt gebruiken om met meerdere termen te zoeken?
+
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = De profielnaam bewerken
+ProfileName--edit-profile-name-input =
+    .aria-label = Profielnaam
+    .title = De profielnaam bewerken
 
 ## Profile Delete Button
 
@@ -675,6 +800,7 @@ ProfileFilterNavigator--full-range-with-duration = Volledig bereik ({ $fullRange
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Profiel importeren en verwerken…
 ProfileLoaderAnimation--loading-unpublished = Profiel rechtstreeks vanuit { -firefox-brand-name } importeren…
 ProfileLoaderAnimation--loading-from-file = Het bestand lezen en het profiel verwerken…
 ProfileLoaderAnimation--loading-local = Nog niet geïmplementeerd.
@@ -705,8 +831,8 @@ ServiceWorkerManager--updated-while-not-ready =
     volledig was geladen. U kunt verstoringen zien.
 ServiceWorkerManager--new-version-is-ready = Een nieuwe versie van de toepassing is gedownload en klaar voor gebruik.
 ServiceWorkerManager--hide-notice-button =
-    .title = Melding opnieuw laden verbergen
     .aria-label = Melding opnieuw laden verbergen
+    .title = Melding opnieuw laden verbergen
 
 ## StackSettings
 ## This is the settings component that is used in Call Tree, Flame Graph and Stack
@@ -714,8 +840,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = Alle frames
     .title = De stackframes niet filteren
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Alleen de stackframes gerelateerd aan uitvoering van JavaScript tonen
+StackSettings--implementation-script = Script
+    .title = Alleen de stackframes gerelateerd aan scriptuitvoering tonen
 StackSettings--implementation-native2 = Ingebouwd
     .title = Alleen de stackframes voor ingebouwde code tonen
 # This label is displayed in the marker chart and marker table panels only.
@@ -735,7 +861,10 @@ StackSettings--call-tree-strategy-native-deallocations-sites = Deallocatie van w
     .title = Samenvatting aan de hand van de gedealloceerde bytes geheugenruimte, per website waarvan de geheugenruimte was gedealloceerd.
 StackSettings--invert-call-stack = Aanroepstack omkeren
     .title = Sorteren op de tijd die in een aanroepnode wordt besteed, waarbij onderliggende nodes worden genegeerd
+StackSettings--include-idle-samples = Inactieve samples opnemen
+    .title = Haal het vinkje weg om samples te verbergen waarvan het leaf-frame zich in de categorie Inactief bevindt.
 StackSettings--show-user-timing = Gebruikerstiming tonen
+StackSettings--use-stack-chart-same-widths = Voor elke stack dezelfde breedte gebruiken
 StackSettings--panel-search =
     .label = Stacks filteren:
     .title = Alleen stacks tonen die een functie bevatten waarvan de naam overeenkomt met deze substring
@@ -766,7 +895,7 @@ TrackContextMenu--only-show-this-process = Alleen dit proces tonen
 # Variables:
 #   $trackName (String) - Name of the selected track to isolate.
 TrackContextMenu--only-show-track = Alleen ‘{ $trackName }’ tonen
-TrackContextMenu--hide-other-screenshots-tracks = Andere schermafdruktracks verbergen
+TrackContextMenu--hide-other-screenshots-tracks = Andere schermafbeeldingstracks verbergen
 # This is used as the context menu item to hide the given track.
 # Variables:
 #   $trackName (String) - Name of the selected track to hide.
@@ -800,9 +929,26 @@ TrackNameButton--hide-process =
 ## the UI. To learn more about it, visit:
 ## https://profiler.firefox.com/docs/#/./memory-allocations?id=memory-track
 
-TrackMemoryGraph--relative-memory-at-this-time = relatief geheugen op dit moment
-TrackMemoryGraph--memory-range-in-graph = geheugenbereik in grafiek
-TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample = toewijzingen en verwijderde toewijzingen sinds de vorige steekproef
+# Variables:
+#   $value (String) - the relative memory at this time (e.g. "5MB")
+TrackMemoryGraph--relative-memory-at-this-time2 = { $value }
+    .label = relatief geheugen op dit moment
+# Variables:
+#   $value (String) - the memory range across the graph (e.g. "5MB")
+TrackMemoryGraph--memory-range-in-graph2 = { $value }
+    .label = geheugenbereik in grafiek
+# Variables:
+#   $value (String) - count of allocations and deallocations since the previous sample
+TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample2 = { $value }
+    .label = allocaties en deallocaties sinds de vorige opname
+
+## TrackProcessCPUGraph
+## This is used to show the CPU usage of a process over time in the timeline.
+
+# Variables:
+#   $value (String) - the CPU usage at this sample (e.g. "50%")
+TrackProcessCPUGraph--cpu = { $value }
+    .label = CPU
 
 ## TrackPower
 ## This is used to show the power used by the CPU and other chips in a computer,
@@ -829,6 +975,11 @@ TrackPower--tooltip-power-watt = { $value } W
 #   $value (String) - the power value at this location
 TrackPower--tooltip-power-milliwatt = { $value } mW
     .label = Vermogen
+# This is used in the tooltip when the instant power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-power-microwatt = { $value } μW
+    .label = Vermogen
 # This is used in the tooltip when the power value uses the kilowatt unit.
 # Variables:
 #   $value (String) - the power value at this location
@@ -843,6 +994,11 @@ TrackPower--tooltip-average-power-watt = { $value } W
 # Variables:
 #   $value (String) - the power value at this location
 TrackPower--tooltip-average-power-milliwatt = { $value } mW
+    .label = Gemiddeld vermogen in de huidige selectie
+# This is used in the tooltip when the power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-average-power-microwatt = { $value } µW
     .label = Gemiddeld vermogen in de huidige selectie
 # This is used in the tooltip when the energy used in the current range uses the
 # kilowatt-hour unit.
@@ -978,6 +1134,12 @@ TransformNavigator--focus-subtree = Node focussen: { $item }
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
 TransformNavigator--focus-function = Focussen: { $item }
+# "Focus self" transform.
+# See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-on-function-self
+# Also see the translation note above CallNodeContextMenu--transform-focus-self.
+# Variables:
+#   $item (String) - Name of the function that transform applied to.
+TransformNavigator--focus-self = Focussen op zelf: { $item }
 # "Focus category" transform. The word "Focus" has the meaning of an adjective here.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-category
 # Variables:
@@ -1049,6 +1211,12 @@ BottomBox--assembly-code-not-available-title = Samenstellingscode niet beschikba
 # Elements:
 #   <a>link text</a> - A link to the github issue about supported scenarios.
 BottomBox--assembly-code-not-available-text = Zie <a>issue #4520</a> voor ondersteunde scenario’s en geplande verbeteringen.
+# The toggle button for making the bottom box fullscreen.
+BottomBox--hide-fullscreen =
+    .title = Volledig scherm verlaten
+# The toggle button for making the bottom box fullscreen.
+BottomBox--show-fullscreen =
+    .title = Volledig scherm
 SourceView--close-button =
     .title = Bronweergave sluiten
 
@@ -1105,6 +1273,13 @@ SourceView--not-in-archive-error-when-obtaining-source = Het bestand { $pathInAr
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = Het archief op { $url } kan niet worden ontleed: { $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = De browser kon het bronbestand voor { $url } met sourceUuid { $sourceUuid } niet verkrijgen: { $errorMessage }.
 
 ## Toggle buttons in the top right corner of the bottom box
 
@@ -1116,6 +1291,17 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = De samenstellingsweergave verbergen
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = Vorige
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = Volgende
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = { $current } van { $total }
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.

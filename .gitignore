@@ -3,11 +3,16 @@ yarn-error.log
 node_modules/
 .DS_Store
 dist/
+node-tools-dist/
 public_html/
+build-meta/
 flow-coverage
 coverage
 .eslintcache
 .prettiercache
+.tsbuildinfo
 webpack.local-config.js
 *.orig
 *.rej
+.idea/
+.profiler-cli-dev/

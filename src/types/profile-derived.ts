@@ -1,0 +1,982 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+import type { Milliseconds, StartEndRange, Address, Bytes } from './units';
+import type { MarkerPayload, MarkerSchema } from './markers';
+import type {
+  ThreadIndex,
+  Pid,
+  IndexIntoFuncTable,
+  IndexIntoJsTracerEvents,
+  IndexIntoCategoryList,
+  IndexIntoResourceTable,
+  IndexIntoLibs,
+  CounterIndex,
+  IndexIntoRawMarkerTable,
+  IndexIntoStringTable,
+  TabID,
+  Tid,
+  ProcessType,
+  PausedRange,
+  RawMarkerTable,
+  ResourceTable,
+  JsTracerTable,
+  IndexIntoStackTable,
+  WeightType,
+  SourceTable,
+  IndexIntoSourceTable,
+  CounterDisplayConfig,
+  SourceLocationTable,
+} from './profile';
+import type { IndexedArray } from './utils';
+import type { BitSet } from '../utils/bitset';
+import type { StackTiming } from '../profile-logic/stack-timing';
+import type { StringTable } from '../utils/string-table';
+import type {
+  IndexIntoSetCollectionTable,
+  SetCollectionTable,
+} from 'firefox-profiler/utils/set-collection';
+export type IndexIntoCallNodeTable = number;
+
+/**
+ * The derived Thread type.
+ *
+ * This type is more ergonomic than the RawThread type:
+ *
+ * - `RawThread` represents the data as it is stored in the profile file format,
+ *   so it needs to be JSON-compatible, and it is encouraged to use more compact
+ *   data representations, e.g. no duplication of shared data on each thread.
+ * - `Thread` is computed at runtime by selectors, and can store data in a way
+ *   that's most convenient for users of the derived state.
+ *
+ * The fields that differ from RawThread are collected at the end of this type
+ * definition.
+ */
+export type Thread = {
+  processType: ProcessType;
+  processStartupTime: Milliseconds;
+  processShutdownTime: Milliseconds | null;
+  registerTime: Milliseconds;
+  unregisterTime: Milliseconds | null;
+  pausedRanges: PausedRange[];
+  showMarkersInTimeline?: boolean;
+  name: string;
+  isMainThread: boolean;
+  // The eTLD+1 of the isolated content process if provided by the back-end.
+  // It will be undefined if:
+  // - Fission is not enabled.
+  // - It's not an isolated content process.
+  // - It's a sanitized profile.
+  // - It's a profile from an older Firefox which doesn't include this field (introduced in Firefox 80).
+  'eTLD+1'?: string;
+  processName?: string;
+  isJsTracer?: boolean;
+  pid: Pid;
+  tid: Tid;
+  jsAllocations?: JsAllocationsTable;
+  nativeAllocations?: NativeAllocationsTable;
+  markers: RawMarkerTable;
+  stackTable: StackTable;
+  frameTable: FrameTable;
+  funcTable: FuncTable;
+  resourceTable: ResourceTable;
+  nativeSymbols: NativeSymbolTable;
+  jsTracer?: JsTracerTable;
+  // If present and true, this thread was launched for a private browsing session only.
+  // When false, it can still contain private browsing data if the profile was
+  // captured in a non-fission browser.
+  // It's absent in Firefox 97 and before, or in Firefox 98+ when this thread
+  // had no extra attribute at all.
+  isPrivateBrowsing?: boolean;
+  // If present and non-0, the number represents the container this thread was loaded in.
+  // It's absent in Firefox 97 and before, or in Firefox 98+ when this thread
+  // had no extra attribute at all.
+  userContextId?: number;
+  tracedObjectShapes?: Array<string[] | null>;
+
+  // The fields below this comment are derived data, and not present on the RawThread
+  // in the same form.
+
+  // Strings for profiles are collected into a single table, and are referred to by
+  // their index by other tables.
+  stringTable: StringTable;
+  // Sources for profiles are collected into a single table, containing file sources
+  // with their UUIDs and filenames.
+  sources: SourceTable;
+  // Source map symbolication results, copied from profile.shared.sourceLocationTable.
+  sourceLocationTable: SourceLocationTable;
+  // The stack samples collected for this thread. This field is different from
+  // RawThread in that the `time` column is always present.
+  samples: SamplesTable;
+  tracedValuesBuffer?: ArrayBuffer;
+};
+
+/**
+ * The derived samples table.
+ */
+export type SamplesTable = {
+  // Responsiveness is the older version of eventDelay. It injects events every 16ms.
+  // This is optional because newer profiles don't have that field anymore.
+  responsiveness?: Array<Milliseconds | null>;
+  // Event delay is the newer version of responsiveness. It allow us to get a finer-grained
+  // view of jank by inferring what would be the delay of a hypothetical input event at
+  // any point in time. It requires a pre-processing to be able to visualize properly.
+  // This is optional because older profiles didn't have that field.
+  eventDelay?: Array<Milliseconds | null>;
+  stack: Array<IndexIntoStackTable | null>;
+  time: Float64Array<ArrayBuffer>;
+  // An optional weight array. If not present, then the weight is assumed to be 1.
+  // See the WeightType type for more information.
+  weight: null | number[];
+  weightType: WeightType;
+  // The CPU percentage, between 0 and 100, over the time between the previous sample
+  // and this sample.
+  // This array has length + 1. The extra element at the end is the CPU percentage
+  // after the last sample. For a range-filtered thread, this is the corresponding
+  // element from the full thread.
+  // If the original thread has no CPU delta information, this array will contain
+  // synthetic values (all 100) and hasCPUDeltas will be false.
+  threadCPUPercent: Uint8Array;
+  // Whether the original thread information contained CPU delta information.
+  hasCPUDeltas: boolean;
+  // The category of each sample's stack in the unfiltered thread.
+  category: Uint8Array;
+  // The subcategory of each sample's stack in the unfiltered thread.
+  subcategory: Uint16Array | Uint8Array;
+  argumentValues?: Array<number | null>;
+  length: number;
+};
+
+export type SampleCategoriesAndSubcategories = {
+  // represents a Map<IndexIntoSamplesTable, IndexIntoCategoryList>
+  sampleCategories: Uint8Array;
+  // represents a Map<IndexIntoSamplesTable, IndexIntoSubcategoryListForCategory>
+  sampleSubcategories: Uint16Array | Uint8Array;
+};
+
+export type SamplesLikeTable = {
+  stack: Array<IndexIntoStackTable | null>;
+  time: Float64Array<ArrayBuffer>;
+  // An optional weight array. If not present, then the weight is assumed to be 1.
+  // See the WeightType type for more information.
+  weight: null | number[];
+  weightType: WeightType;
+  argumentValues?: Array<number | null>;
+  length: number;
+};
+
+export type CounterSamplesTable = {
+  time: Float64Array<ArrayBuffer>;
+  // The number of times the Counter's "number" was changed since the previous sample.
+  // This property was mandatory until the format version 42, it was made optional in 43.
+  number?: number[];
+  // The count of the data, for instance for memory this would be bytes.
+  count: number[];
+  argumentValues?: Array<number | null>;
+  length: number;
+};
+
+/**
+ * The `JsAllocationsTable` type of the derived thread.
+ *
+ * Differs from `RawJsAllocationsTable` in that the `time` column is always a
+ * `Float64Array`.
+ */
+export type JsAllocationsTable = {
+  time: Float64Array<ArrayBuffer>;
+  className: string[];
+  typeName: string[];
+  coarseType: string[];
+  weight: Bytes[];
+  weightType: 'bytes';
+  inNursery: boolean[];
+  stack: Array<IndexIntoStackTable | null>;
+  length: number;
+};
+
+/**
+ * The `UnbalancedNativeAllocationsTable` type of the derived thread.
+ *
+ * Differs from `RawUnbalancedNativeAllocationsTable` in that the `time` column
+ * is always a `Float64Array`.
+ */
+export type UnbalancedNativeAllocationsTable = {
+  time: Float64Array<ArrayBuffer>;
+  weight: Bytes[];
+  weightType: 'bytes';
+  stack: Array<IndexIntoStackTable | null>;
+  argumentValues?: Array<number | null>;
+  length: number;
+};
+
+/**
+ * The `BalancedNativeAllocationsTable` type of the derived thread.
+ */
+export type BalancedNativeAllocationsTable =
+  UnbalancedNativeAllocationsTable & {
+    memoryAddress: number[];
+    threadId: number[];
+  };
+
+/**
+ * The `NativeAllocationsTable` type of the derived thread.
+ */
+export type NativeAllocationsTable =
+  | UnbalancedNativeAllocationsTable
+  | BalancedNativeAllocationsTable;
+
+export type Counter = {
+  name: string;
+  category: string;
+  description: string;
+  pid: Pid;
+  mainThreadIndex: ThreadIndex;
+  samples: CounterSamplesTable;
+  display: CounterDisplayConfig;
+};
+
+/**
+ * The `StackTable` type of the derived thread.
+ *
+ * The only difference from the `RawStackTable` is that the `StackTable` has a
+ * `category` and a `subcategory` column, and that the `StackTable` always uses
+ * a typed array for the `frame` column.
+ *
+ * The category of a stack node is always non-null and is derived from a stack's
+ * frame and its prefix. Frames can have null categories, stacks cannot. If a
+ * stack's frame has a null category, the stack inherits the category of its
+ * prefix stack. Root stacks whose frame has a null stack have their category
+ * set to the "default category". (The default category is currently defined as
+ * the category in the profile's category list whose color is "grey", and such
+ * a category is required to be present.)
+ *
+ * We compute the category information at the start of the thread transform
+ * pipeline, not at the end. This allows us to preserve categories more accurately
+ * when transforms are applied. Example:
+ *
+ * In the call path
+ *   someJSFunction [JS] -> Node.insertBefore [DOM] -> nsAttrAndChildArray::InsertChildAt,
+ * the stack node for nsAttrAndChildArray::InsertChildAt should inherit the
+ * category DOM from its "Node.insertBefore" prefix stack. And it should keep
+ * the DOM category even if you apply the "Merge node into calling function"
+ * transform to Node.insertBefore. This transform removes the stack node
+ * "Node.insertBefore" from the stackTable, so the information about the DOM
+ * category would be lost if it wasn't inherited into the
+ * nsAttrAndChildArray::InsertChildAt stack before transforms are applied.
+ */
+export type StackTable = {
+  frame: Int32Array;
+  // Maps each stack to its parent stack, or -1 if it is a root.
+  prefix: Int32Array;
+  length: number;
+
+  // Derived from RawStackTable + FrameTable
+  category: Uint8Array<ArrayBuffer>; // represents a Map<IndexIntoStackTable, IndexIntoCategoryList>
+  subcategory: Uint8Array<ArrayBuffer> | Uint16Array<ArrayBuffer>; // represents a Map<IndexIntoStackTable, IndexIntoSubcategoryListForCategory>
+};
+
+/**
+ * The `FrameTable` type of the derived thread.
+ *
+ * Differs from `RawFrameTable` in that all columns are always stored as typed
+ * arrays. In `RawFrameTable`, these columns may be either regular arrays or
+ * typed arrays, since regular arrays are convenient during construction.
+ *
+ * See the comment on `RawFrameTable` for the semantics of the `flags` column
+ * and how it relates to the other columns.
+ *
+ * The `category` and `subcategory` columns use the same widths as the ones on
+ * the `StackTable`, since the stack table's columns are computed from these.
+ */
+export type FrameTable = {
+  flags: Uint8Array<ArrayBuffer>;
+  address: Uint32Array<ArrayBuffer>;
+  category: Uint8Array<ArrayBuffer>;
+  subcategory: Uint8Array<ArrayBuffer> | Uint16Array<ArrayBuffer>;
+  func: Int32Array<ArrayBuffer>;
+  lib: Int32Array<ArrayBuffer>;
+  nativeSymbol: Int32Array<ArrayBuffer>;
+  innerWindowID: Float64Array<ArrayBuffer>;
+  line: Int32Array<ArrayBuffer>;
+  column: Int32Array<ArrayBuffer>;
+  originalLocation: Int32Array<ArrayBuffer>;
+  length: number;
+};
+
+/**
+ * The `FuncTable` type of the derived thread.
+ *
+ * Differs from `RawFuncTable` in that all columns are always stored as typed
+ * arrays. In `RawFuncTable`, these columns may be either regular arrays or
+ * typed arrays, since regular arrays are convenient during construction.
+ *
+ * See the comment on `RawFuncTable` for the semantics of the `flags` column
+ * and how it relates to the other columns.
+ */
+export type FuncTable = {
+  flags: Uint8Array<ArrayBuffer>;
+  name: Int32Array<ArrayBuffer>;
+  resource: Int32Array<ArrayBuffer>;
+  source: Int32Array<ArrayBuffer>;
+  lineNumber: Int32Array<ArrayBuffer>;
+  columnNumber: Int32Array<ArrayBuffer>;
+  originalLocation: Int32Array<ArrayBuffer>;
+  length: number;
+};
+
+/**
+ * The `NativeSymbolTable` type of the derived thread.
+ *
+ * Differs from `RawNativeSymbolTable` in that all columns are always stored as
+ * typed arrays, and `functionSize` uses `-1` as the sentinel for "size unknown"
+ * (rather than `null`).
+ */
+export type NativeSymbolTable = {
+  libIndex: Int32Array<ArrayBuffer>;
+  address: Uint32Array<ArrayBuffer>;
+  name: Int32Array<ArrayBuffer>;
+  // `-1` means "size unknown".
+  functionSize: Int32Array<ArrayBuffer>;
+  length: number;
+};
+
+/**
+ * Similar to the StackTable, but based on functions rather than on frames.
+ *
+ * The CallNodeTable, like the StackTable, always describes the *non-inverted* tree.
+ * Indexes into its columns are the non-inverted call node indexes.
+ *
+ * # Detailed description
+ *
+ * The CallNodeTable is a table of function call information and represents the stacks of what
+ * functions were called, as opposed to stacks based on frames. There can be multiple
+ * frames for a single function call. Using stacks as opposed to a computed tree of
+ * CallNodes can cause duplicated functions in the call tree.
+ *
+ * For example:
+ *
+ *            stack1 (funcA)                             callNode1 (funcA)
+ *                 |                                            |
+ *                 v                                            v
+ *            stack2 (funcB)         StackTable to       callNode2 (funcB)
+ *                 |                 CallNodeTable              |
+ *                 v                      ->                    v
+ *            stack3 (funcC)                             callNode3 (funcC)
+ *            /            \                                    |
+ *           V              V                                   v
+ *    stack4 (funcD)     stack5 (funcD)                  callNode4 (funcD)
+ *         |                  |                          /               \
+ *         v                  V                         V                 V
+ *    stack6 (funcE)     stack7 (funcF)       callNode5 (funcE)     callNode6 (funcF)
+ *
+ * For a detailed explanation of callNodes see `docs-developer/call-tree.md` and
+ * `docs-developer/call-nodes-in-cpp.md`.
+ *
+ * # Call node ordering
+ *
+ * Call nodes are ordered in depth-first traversal order. This makes it super fast
+ * to check whether node A is a descendant of node B, because all subtrees are
+ * a contiguous range of call node indexes.
+ *
+ * More details about the ordering:
+ *
+ *  - The node at index 0 is the first root node.
+ *  - If a node A has children, then A + 1 is its first child.
+ *  - If a node A has no children, then A + 1 is its next sibling, or the closest
+ *    next sibling of an ancestor node if A doesn't have a next sibling.
+ *  - For every node A, there's a single "index range" which contains this node
+ *    and all its descendants: [A, callNodeTable.subtreeRangeEnd[A]).
+ *  - This "tree of ranges" is well-nested.
+ *  - The ordering of siblings doesn't have any meaning, i.e. it doesn't matter
+ *    if a node is the first or the third child of its parent (they're not
+ *    ordered by func or anything).
+ *
+ * Example:
+ *
+ * ```
+ *  - 0 funcG
+ *    - 1 funcH
+ *      - 2 funcI
+ *      - 3 funcG
+ *    - 4 funcJ
+ *    - 5 funcI
+ *  - 6 funcK
+ *    - 7 funcG
+ *      - 8 funcL
+ *  - 9 funcH
+ * ```
+ *
+ * In this example, the index range of the subtree of node 0 is [0, 6).
+ * The index range of the subtree of node 3 is [3, 4), i.e. the half-open range
+ * which only contains node 3.
+ */
+export type CallNodeTable = {
+  // The index of the parent call node, or -1 for root nodes.
+  prefix: Int32Array; // IndexIntoCallNodeTable -> IndexIntoCallNodeTable | -1
+
+  // The index of this node's next sibling, or -1 if this node is the last child / last root.
+  nextSibling: Int32Array; // IndexIntoCallNodeTable -> IndexIntoCallNodeTable | -1
+
+  // The index after this node's last descendant. If this node has a next sibling,
+  // subtreeRangeEnd is equal to nextSibling. Otherwise, this is the index
+  // of the next sibling of the closest ancestor node which has a next sibling.
+  // The last node has subtreeRangeEnd set to callNodeTable.length.
+  //
+  // The nodes in the range range [A, subtreeRangeEnd[A]) form A's subtree.
+  subtreeRangeEnd: Uint32Array; // IndexIntoCallNodeTable -> IndexIntoCallNodeTable
+
+  func: Int32Array; // IndexIntoCallNodeTable -> IndexIntoFuncTable
+  category: Int32Array; // IndexIntoCallNodeTable -> IndexIntoCategoryList
+  subcategory: Int32Array; // IndexIntoCallNodeTable -> IndexIntoSubcategoryListForCategory
+  innerWindowID: Float64Array; // IndexIntoCallNodeTable -> InnerWindowID
+  // IndexIntoNativeSymbolTable: all frames that collapsed into this call node inlined into the same native symbol
+  // -1: divergent: not all frames that collapsed into this call node were inlined, or they are from different symbols
+  // -2: no inlining
+  sourceFramesInlinedIntoSymbol: Int32Array;
+  // The depth of the call node. Roots have depth 0.
+  depth: Int32Array;
+  // The maximum value in the depth column, or -1 if this table is empty.
+  maxDepth: number;
+  // The number of call nodes. All columns in this table have this length.
+  length: number;
+};
+
+// A bitset which indicates something per call node. Use `checkBit` from
+// utils/bitset to check whether a call node is part of the set.
+export type CallNodeTableBitSet = BitSet;
+
+export type LineNumber = number;
+
+// Stores the line numbers which are hit by each stack, for one specific source
+// file.
+// Used to compute LineTimings in combination with a SamplesLikeTable.
+//
+// StackLineInfo can be computed once for a filtered thread. Then it is reused
+// for the computation of different LineTimings as the preview selection changes.
+//
+// The order of these arrays is the same as the order of thread.stackTable;
+// the array index is a stackIndex. Not all stacks are guaranteed to have a useful
+// value; only stacks which are used as "self" stacks, i.e. stacks which are used
+// in thread.samples.stack or in marker stacks / allocation stacks, are required
+// to have their values computed - only these values will be accessed during the
+// LineTimings computation.
+//
+// For stacks which are only used as prefix stack nodes, selfLine and
+// stackLine may be null. This is fine because their values are not accessed
+// during the LineTimings computation.
+export type StackLineInfo = {
+  // Represents a Map<IndexIntoStackTable, IndexIntoLineSetTable | -1>
+  stackIndexToLineSetIndex: Int32Array;
+  // Stores entries representing a pair of (set of lines, self line), usually
+  // much much smaller than the stackTable because it only stores entries for
+  // the current source.
+  lineSetTable: SetCollectionTable<LineNumber>;
+};
+
+export type IndexIntoLineSetTable = IndexIntoSetCollectionTable;
+
+// Stores, for all lines of one specific file, how many times each line is hit
+// by samples in a thread. The maps only contain non-zero values.
+// So map.get(line) === undefined should be treated as zero.
+export type LineTimings = {
+  totalLineHits: Map<LineNumber, number>;
+  selfLineHits: Map<LineNumber, number>;
+};
+
+// Stores the addresses which are hit by each stack, for addresses belonging to
+// one specific native symbol.
+// Used to compute AddressTimings in combination with a SamplesLikeTable.
+//
+// StackAddressInfo can be computed once for a filtered thread. Then it is reused
+// for the computation of different AddressTimings as the preview selection changes.
+//
+// The order of these arrays is the same as the order of thread.stackTable;
+// the array index is a stackIndex. Not all stacks are guaranteed to have a useful
+// value; only stacks which are used as "self" stacks, i.e. stacks which are used
+// in thread.samples.stack or in marker stacks / allocation stacks, are required
+// to have their values computed - only these values will be accessed during the
+// AddressTimings computation.
+//
+// For stacks which are only used as prefix stack nodes, selfAddress and
+// stackAddress may be null. This is fine because their values are not accessed
+// during the AddressTimings computation.
+export type StackAddressInfo = {
+  // Represents a Map<IndexIntoStackTable, IndexIntoAddressSetTable | -1>
+  stackIndexToAddressSetIndex: Int32Array;
+  // Stores entries representing the pair (set of addresses, self address), usually
+  // much much smaller than the stackTable because it only stores entries for the
+  // current native symbol.
+  addressSetTable: SetCollectionTable<Address>;
+};
+
+export type IndexIntoAddressSetTable = IndexIntoSetCollectionTable;
+
+// Stores, for all addresses of one specific library, how many times each
+// address is hit by samples in a thread. The maps only contain non-zero values.
+// So map.get(address) === undefined should be treated as zero.
+export type AddressTimings = {
+  totalAddressHits: Map<Address, number>;
+  selfAddressHits: Map<Address, number>;
+};
+
+// Stores the information that's needed to prove to the symbolication API that
+// we are authorized to request the source code for a specific file.
+// This "address proof" makes it easy for the browser (or local symbol server)
+// to limit file access to only the set of files which are referenced by trusted
+// symbol information, without forcing the browser (or local symbol server) to
+// build a full list of such files upfront. Building a full list would take a
+// long time - up to a minute. Checking individual addresses is much faster.
+//
+// By allowing access to only the files referenced by symbol information, we
+// avoid giving malicious actors the ability to read arbitrary files.
+// Specifically, this restriction protects against the following threats:
+//  - If source code is requested from the browser via the WebChannel, the check
+//    avoids exposing arbitrary files to a compromised profiler.firefox.com web
+//    page or to a compromised profiler.firefox.com content process. So the
+//    check only makes a difference in cases where the browser can no longer
+//    trust the profiler WebChannel.
+//  - If source code is requested from a local symbol server via an HTTP
+//    request, the check avoids exposing arbitrary files to a compromised
+//    profiler.firefox.com page, or to other web pages or outside actors who
+//    have guessed the correct URL to request source code from. Symbol servers
+//    will usually put a randomized token into the URL in order to make it even
+//    harder to guess the right URL. The address proof check is an extra layer
+//    of protection on top of that, in case the secret URL somehow leaks.
+export type AddressProof = {
+  // The debugName of a library whose symbol information refers to the requested
+  // file.
+  debugName: string;
+  // The breakpadId of that library.
+  breakpadId: string;
+  // The address in that library for which the symbolicated frames refer to the
+  // requested file.
+  address: Address;
+};
+
+/**
+ * When working with call trees, individual nodes in the tree are not stable across
+ * different types of transformations and filtering operations. In order to refer
+ * to some place in the call tree we use a list of functions that either go from
+ * root to tip for normal call trees, or from tip to root for inverted call trees.
+ * These paths are then stored along with the implementation filter, and the whether
+ * or not the tree is inverted for a stable reference into a call tree.
+ *
+ * In some parts of the code the term prefix path is used to refer to a CallNodePath that
+ * goes from root to tip, and the term postfix path is used to refer to a CallNodePath
+ * that goes from tip to root.
+ */
+export type CallNodePath = IndexIntoFuncTable[];
+
+/**
+ * This type contains the first derived `Marker[]` information, plus an IndexedArray
+ * to get back to the RawMarkerTable.
+ */
+export type DerivedMarkerInfo = {
+  markers: Marker[];
+  markerIndexToRawMarkerIndexes: IndexedArray<
+    MarkerIndex,
+    IndexIntoRawMarkerTable[]
+  >;
+};
+
+export type Marker = {
+  start: Milliseconds;
+  end: Milliseconds | null;
+  name: string;
+  category: IndexIntoCategoryList;
+  threadId: Tid | null;
+  data: MarkerPayload | null;
+  incomplete?: boolean;
+};
+
+/**
+ * A value with this type uniquely identifies a marker. This is the index of a
+ * marker in the full marker list (as returned by the selector `getFullMarkerList`),
+ * and the marker object is returned using the function `getMarker` as returned
+ * by the selector `getMarkerGetter`:
+ *
+ *   const getMarker = selectedThreadSelectors.getMarkerGetter(state);
+ *   const marker = getMarker(markerIndex);
+ */
+export type MarkerIndex = number;
+
+export type CallNodeData = {
+  funcName: string;
+  total: number;
+  totalRelative: number;
+  self: number;
+  selfRelative: number;
+};
+
+export type ExtraBadgeInfo = {
+  name: string;
+  localizationId: string;
+  vars: unknown;
+  titleFallback: string;
+  contentFallback: string;
+};
+
+export type CallNodeDisplayData = Readonly<{
+  total: string;
+  totalWithUnit: string;
+  totalPercent: string;
+  self: string;
+  selfWithUnit: string;
+  name: string;
+  lib: string;
+  isFrameLabel: boolean;
+  categoryName: string;
+  categoryColor: string;
+  iconSrc: string | null;
+  badge?: ExtraBadgeInfo;
+  icon: string | null;
+  ariaLabel: string;
+}>;
+
+export type FuncTableWithReservedFunctions = {
+  funcTable: FuncTable;
+  reservedFunctionsForResources: Map<
+    IndexIntoResourceTable,
+    IndexIntoFuncTable
+  >;
+};
+
+/**
+ * The marker timing contains the necessary information to draw markers very quickly
+ * in the marker chart. It represents a single row of markers in the chart.
+ */
+export type MarkerTiming = {
+  // Start time in milliseconds.
+  start: number[];
+  // End time in milliseconds. It will equals start for instant markers.
+  end: number[];
+  index: MarkerIndex[];
+  name: string;
+  bucket: string;
+  // True if this marker timing contains only instant markers.
+  instantOnly: boolean;
+  length: number;
+};
+
+export type MarkerTimingRows = Array<MarkerTiming>;
+
+/**
+ * Combined timing can be used in the Stack Chart. When this happens, the chart will
+ * either take both marker timing and stack timing, or just the stack timing information.
+ * This way, UserTiming markers can be shown together with the stack information.
+ */
+export type CombinedTimingRows =
+  | Array<MarkerTiming | StackTiming>
+  | Array<StackTiming>;
+
+/**
+ * This type contains the necessary information to fully draw the marker chart. Each
+ * entry in the array represents a single fixed height row in the chart. The MarkerTiming
+ * represents the markers, and a bare string represents a marker "bucket". It is drawn
+ * as a single row in the marker chart, and serves as a separator between different
+ * areas. This flat array structure was chosen because it makes it really easy to
+ * loop through each row, and only draw the current subset on the screen.
+ */
+export type MarkerTimingAndBuckets = Array<MarkerTiming | string>;
+
+export type JsTracerTiming = {
+  // Start time in milliseconds.
+  start: number[];
+  // End time in milliseconds.
+  end: number[];
+  index: IndexIntoJsTracerEvents[];
+  label: string[];
+  name: string;
+  func: Array<IndexIntoFuncTable | null>;
+  length: number;
+};
+
+/**
+ * The memory counter contains relative offsets of memory. This type provides a data
+ * structure that can be used to see the total range of change over all the samples.
+ */
+export type AccumulatedCounterSamples = {
+  readonly minCount: number;
+  readonly maxCount: number;
+  readonly countRange: number;
+  // This value holds the accumulation of all the previous counts in the Counter samples.
+  // For a memory counter, this gives the relative offset of bytes in that range
+  // selection. The array will share the indexes of the range filtered counter samples.
+  readonly accumulatedCounts: number[];
+};
+
+/**
+ * A collection of the data for all configured lines for a given marker
+ */
+export type CollectedCustomMarkerSamples = {
+  // This value holds the number per configured line
+  // selection. The array will share the indexes of the range filtered marker samples.
+  readonly numbersPerLine: number[][];
+  readonly markerIndexes: MarkerIndex[];
+};
+
+export type ValueBounds = {
+  readonly minNumber: number;
+  readonly maxNumber: number;
+};
+
+export type StackType = 'js' | 'native' | 'unsymbolicated';
+
+export type GlobalTrack =
+  // mainThreadIndex is null when this is a fake global process added to contain
+  // real threads.
+  | {
+      readonly type: 'process';
+      readonly pid: Pid;
+      readonly mainThreadIndex: ThreadIndex | null;
+    }
+  | {
+      readonly type: 'screenshots';
+      readonly markerName: string;
+      readonly threadIndex: ThreadIndex;
+    }
+  | { readonly type: 'visual-progress' }
+  | { readonly type: 'perceptual-visual-progress' }
+  | { readonly type: 'contentful-visual-progress' };
+
+export type LocalTrack =
+  | { readonly type: 'thread'; readonly threadIndex: ThreadIndex }
+  | { readonly type: 'network'; readonly threadIndex: ThreadIndex }
+  | { readonly type: 'counter'; readonly counterIndex: CounterIndex }
+  | { readonly type: 'ipc'; readonly threadIndex: ThreadIndex }
+  | { readonly type: 'event-delay'; readonly threadIndex: ThreadIndex }
+  | {
+      readonly type: 'marker';
+      readonly threadIndex: ThreadIndex;
+      readonly markerSchema: MarkerSchema;
+      readonly markerName: IndexIntoStringTable;
+    };
+
+export type Track = GlobalTrack | LocalTrack;
+
+// A track index doesn't always represent uniquely a track: it's merely an index inside
+// a specific structure:
+// - for global tracks, this is the index in the global tracks array
+// - for local tracks, this is the index in the local tracks array for a specific pid.
+export type TrackIndex = number;
+
+/**
+ * Type that holds the values of personally identifiable information that user
+ * wants to remove.
+ */
+export type RemoveProfileInformation = {
+  // Remove the given hidden threads if they are provided.
+  readonly shouldRemoveThreads: Set<ThreadIndex>;
+  // Remove the given counters if they are provided.
+  readonly shouldRemoveCounters: Set<CounterIndex>;
+  // Remove the screenshots if they are provided.
+  readonly shouldRemoveThreadsWithScreenshots: Set<ThreadIndex>;
+  // Remove the full time range if StartEndRange is provided.
+  readonly shouldFilterToCommittedRange: StartEndRange | null;
+  // Remove all the URLs if it's true.
+  readonly shouldRemoveUrls: boolean;
+  // Remove the extension list if it's true.
+  readonly shouldRemoveExtensions: boolean;
+  // Remove the preference values if it's true.
+  readonly shouldRemovePreferenceValues: boolean;
+  // Remove the private browsing data if it's true.
+  readonly shouldRemovePrivateBrowsingData: boolean;
+  // Remove the argument values captured by the JS execution tracer if it's true.
+  readonly shouldRemoveArgumentValues: boolean;
+};
+
+/**
+ * The activity graph draws one fill per category per bucket. Every sample
+ * contributes to exactly one bucket. This is only about how a sample is
+ * *drawn*: unlike SampleRelationToNode, it makes no distinction between a
+ * node's self samples and its non-self samples, because both are drawn with
+ * the selection highlight fill.
+ */
+export const enum FillBucket {
+  FilteredOutByTransform = 0,
+  Selected = 1,
+  UnselectedOrderedBeforeSelected = 2,
+  UnselectedOrderedAfterSelected = 3,
+}
+
+// The bit in a SampleRelationToNode which says that the sample's stack *ends*
+// at the node, rather than just passing through it. It is deliberately above
+// the bits used by FillBucket, so that a relation's fill bucket can be
+// recovered with a single mask - see SampleRelations.fillBucket.
+const SELF_FLAG = 1 << 2;
+
+// Masks a SampleRelationToNode down to its FillBucket.
+export const FILL_BUCKET_MASK = 3;
+
+/**
+ * Describes how a sample relates to one particular call node. Usually that node
+ * is the selected call node, but the same relation is useful for other nodes,
+ * too, e.g. for the hovered node in the flame graph.
+ *
+ * "Total" means that the sample's stack runs through the node, so the sample
+ * counts towards the node's total time. "AndSelf" additionally means that the
+ * sample's stack *ends* at the node, so it also counts towards the node's self
+ * time. Keeping those two apart lets the sidebar and the flame graph tooltip
+ * compute their timings from the same array that the activity graph uses to
+ * decide how to highlight and stripe its areas.
+ *
+ * "Before" and "After" describe samples which are unrelated to the node, and
+ * order them relative to it as sorted by getTreeOrderComparator. The activity
+ * graph relies on that ordering so that samples from the same subtree clump
+ * together in the graph.
+ *
+ * Every member is written as its FillBucket, optionally with SELF_FLAG on top.
+ * That is what makes SampleRelations.fillBucket a single mask rather than a
+ * table lookup, so keep new members in that form.
+ */
+export const enum SampleRelationToNode {
+  // The sample was filtered out, e.g. by a search or by a call tree transform.
+  FilteredOut = FillBucket.FilteredOutByTransform,
+  // The sample's stack runs through the node but does not end at it, so the
+  // sample counts towards the node's total time but not its self time.
+  TotalButNotSelf = FillBucket.Selected,
+  // The sample's stack ends at the node, so the sample counts towards both the
+  // node's total time and its self time.
+  TotalAndSelf = FillBucket.Selected | SELF_FLAG,
+  // The sample is unrelated to the node, and ordered before it.
+  Before = FillBucket.UnselectedOrderedBeforeSelected,
+  // The sample is unrelated to the node, and ordered after it.
+  After = FillBucket.UnselectedOrderedAfterSelected,
+}
+
+/**
+ * It holds the initially selected track's HTMLElement. This allows the timeline
+ * to scroll the initially selected track into view once the page is loaded.
+ */
+export type InitialSelectedTrackReference = HTMLElement;
+
+/**
+ * Page data for ProfileFilterNavigator component.
+ */
+export type ProfileFilterPageData = {
+  origin: string;
+  hostname: string;
+  favicon: string | null;
+};
+
+/**
+ * Information about the Tab selector state that is sorted by their tab activity
+ * scores.
+ */
+export type SortedTabPageData = Array<{
+  tabID: TabID;
+  tabScore: number;
+  pageData: ProfileFilterPageData;
+}>;
+
+export type CallNodeSelfAndSummary = {
+  // This property stores the amount of unit (time, bytes, count, etc.) spent in
+  // this call node and not in any of its descendant nodes.
+  callNodeSelf: Float64Array;
+  // The sum of absolute values in callNodeSelf.
+  // This is used for computing the percentages displayed in the call tree.
+  rootTotalSummary: number;
+};
+
+/**
+ * The self and total time, usually for a single call node.
+ * As with most places where the terms "self" and "total" are used, the meaning
+ * of the numbers depends on the context:
+ *  - When used for "traced" timing, the values are Milliseconds.
+ *  - Otherwise, the values are in the same unit as the sample weight type. For
+ *    example, they could be sample counts, weights, or bytes.
+ */
+export type SelfAndTotal = { self: number; total: number };
+
+/*
+ * Event delay table that holds the pre-processed event delay values and other
+ * statistics about it.
+ * Gecko sends the non processed event delay values to the front-end and we have
+ * to make a calculation to find out their real values. Also see:
+ * https://searchfox.org/mozilla-central/rev/3811b11b5773c1dccfe8228bfc7143b10a9a2a99/tools/profiler/core/platform.cpp#3000-3186
+ */
+export type EventDelayInfo = {
+  readonly eventDelays: Float32Array;
+  readonly minDelay: Milliseconds;
+  readonly maxDelay: Milliseconds;
+  readonly delayRange: Milliseconds;
+};
+
+/**
+ * This is a unique key that can be used in an object cache that represents either
+ * a single thread, or a selection of multiple threads. When it's a number, it's
+ * the ThreadIndex. When there are multiple threads, the key is a string of sorted,
+ * comma separated thread indexes, e.g. "5,7,10"
+ */
+export type ThreadsKey = string | number;
+
+/**
+ * A representation of a native symbol which is independent from a thread.
+ * This is used for storing the global state of the assembly view, which needs
+ * to be independent from the selected thread. An IndexIntoNativeSymbolTable
+ * would only be meaningful within a thread.
+ * This can be removed if the native symbol table ever becomes global.
+ */
+export type NativeSymbolInfo = {
+  name: string;
+  address: Address;
+  // The number of bytes belonging to this function, starting at the symbol address.
+  // If functionSizeIsKnown is false, then this is a minimum size.
+  functionSize: Bytes;
+  functionSizeIsKnown: boolean;
+  libIndex: IndexIntoLibs;
+};
+
+/**
+ * Information about the initiating call node when the bottom box (source view +
+ * assembly view) is updated.
+ */
+export type BottomBoxInfo = {
+  sourceIndex: IndexIntoSourceTable | null;
+  nativeSymbols: NativeSymbolInfo[];
+  initialNativeSymbol: number | null; // index into `nativeSymbols`
+  // Optional line number + instruction address to scroll into view.
+  scrollToLineNumber?: number;
+  scrollToInstructionAddress?: number;
+  // Which lines / instructions to highlight (or none). This is used when clicking
+  // a stack frame in a marker stack.
+  highlightedLineNumber: number | null;
+  highlightedInstructionAddress: number | null;
+};
+
+/**
+ * Favicon data that is retrieved from the browser connection.
+ */
+export type FaviconData = {
+  readonly data: ArrayBuffer;
+  readonly mimeType: string;
+};
+
+/**
+ * Information about how the indexes in a profile have changed, for example
+ * after profile compaction.
+ */
+export type ProfileIndexTranslationMaps = {
+  oldThreadIndexToNew: Map<ThreadIndex, ThreadIndex> | null;
+  oldFuncCount: number;
+  newFuncCount: number;
+  oldStackToNewStackPlusOne: Int32Array;
+  oldFrameToNewFramePlusOne: Int32Array;
+  oldFuncToNewFuncPlusOne: Int32Array;
+  oldResourceToNewResourcePlusOne: Int32Array;
+  oldNativeSymbolToNewNativeSymbolPlusOne: Int32Array;
+  oldSourceToNewSourcePlusOne: Int32Array;
+  oldStringToNewStringPlusOne: Int32Array;
+  oldLibToNewLibPlusOne: Int32Array;
+};
+
+export type TransformEffectOnThreadData = {
+  dropIfOldStackIsNot?: BitSet;
+  oldStackToNewStack?: Int32Array; // drop if oldStackToNewStack[oldStack] === -1
+};
+
+export type TransformOutput = {
+  newStackTable: StackTable;
+  effectOnThreadData: TransformEffectOnThreadData;
+};

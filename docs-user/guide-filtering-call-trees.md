@@ -4,12 +4,12 @@ Call trees can grow to be quite large, especially when profiling a browser engin
 
 The following are the different types of filtering operations that are supported.
 
-| Filter type | Description |
-| ----------- | ----------- |
-| Search filter | Drop samples that do not match a text string. |
-| Implementation filter | Restrict stacks to an implementation—native (C++) stacks, or to JavaScript stacks. |
-| Invert call stack | Flip the sample's stacks upside down and build a new call tree. |
-| Transforms | Modify the shape of the call tree according to some operation. Typically, this only modifies the stacks. |
+| Filter type           | Description                                                                                              |
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| Search filter         | Drop samples that do not match a text string.                                                            |
+| Implementation filter | Restrict stacks to an implementation—native (C++) stacks, or to JavaScript stacks.                       |
+| Invert call stack     | Flip the sample's stacks upside down and build a new call tree.                                          |
+| Transforms            | Modify the shape of the call tree according to some operation. Typically, this only modifies the stacks. |
 
 ## Search filter
 
@@ -21,14 +21,14 @@ Searching will exclude samples that do not match a search string. The search fil
 
 The above diagram is reproduced in the profile below:
 
-* Before searching: [https://perfht.ml/2I3SMsR](https://perfht.ml/2I3SMsR)
-* After searching: [https://perfht.ml/2rbcj0N](https://perfht.ml/2rbcj0N)
+- Before searching: [https://perfht.ml/2I3SMsR](https://perfht.ml/2I3SMsR)
+- After searching: [https://perfht.ml/2rbcj0N](https://perfht.ml/2rbcj0N)
 
 The following are some ideas on how to use search terms:
 
- * `js::` - Filter for a C++ namespace.
- * `www.example.com` - Filter for a domain name.
- * `www.example.com/assets/scripts.js` - Filter for a single script.
+- `js::` - Filter for a C++ namespace.
+- `www.example.com` - Filter for a domain name.
+- `www.example.com/assets/scripts.js` - Filter for a single script.
 
 ## Implementation filter
 
@@ -73,6 +73,18 @@ Merging takes a call node and removes it from the call tree. Any self time for t
 ### Focus
 
 Focusing on a function or call node removes all of the ancestor call nodes—the children call nodes remain. If a stack does not contain that function or node, then it is removed. This effectively focuses on a subtree or a set of subtrees on the call tree.
+
+### Focus on Function Self
+
+Focus on function self is similar to focus on function, but more restrictive: it only keeps samples where the focused function is the innermost implementation-filtered frame. This helps you analyze where within a function the self time is being spent, by removing samples where the function is calling other code.
+
+For example, if you focus-self on a JavaScript function with the JS implementation filter, you'll only see samples where that JS function has self time, and any native (C++) calls below it will be shown as descendants. This is particularly useful for:
+
+- Finding which parts of a function are slow (by looking at the assembly or source lines)
+- Understanding what engine internals are being called by a JS function (by switching implementation filter after focusing)
+- Eliminating noise from code your function calls, to concentrate on the function's own execution
+
+If the same function appears multiple times in a stack (recursion), only the innermost instance is kept as the root.
 
 ### Focus on Category
 

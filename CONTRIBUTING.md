@@ -6,21 +6,21 @@ First off, thanks for taking the time to contribute to Mozilla and the Firefox P
 
 This project is made up of a cross section of different parts of Mozilla, including people from Firefox DevTools and from Firefox's platform team who are working on the C++ and Rust internals of Firefox. Some core Mozillians on the team are:
 
-| -                                                                                          | Name               | Github Handle                                                  | Position                               |
-| ------------------------------------------------------------------------------------------ | ------------------ | -------------------------------------------------------------- | -------------------------------------- |
-| ![][julienw]                                                                               | Julien Wajsberg    | [@julienw](https://github.com/julienw)                         | Firefox Frontend Engineer              |
-| ![][canova]                                                                                | Nazim Can Altinova | [@canova](https://github.com/canova)                           | Firefox Platform and Frontend Engineer |
-| <img src="https://avatars.githubusercontent.com/mstange?size=56" width="56" height="56" /> | Markus Stange      | [@mstange](https://github.com/mstange)                         | Firefox Platform Engineer              |
-| ![][AdamBrouwersHarries]                                                                   | Adam Harries       | [@AdamBrouwersHarries](https://github.com/AdamBrouwersHarries) | Firefox Platform Engineer              |
-| ![][davehunt]                                                                              | Dave Hunt          | [@davehunt](https://github.com/davehunt)                       | Firefox Profiler Team Manager          |
+| -                                                                                          | Name               | Github Handle                                    | Position                               |
+| ------------------------------------------------------------------------------------------ | ------------------ | ------------------------------------------------ | -------------------------------------- |
+| ![][fatadel]                                                                               | Adel Fatkhutdinov  | [@fatadel](https://github.com/fatadel)           | Firefox Frontend Engineer              |
+| ![][carverdamien]                                                                          | Damien Carver      | [@carverdamien](https://github.com/carverdamien) | Firefox Platform Engineer              |
+| ![][canova]                                                                                | Nazim Can Altinova | [@canova](https://github.com/canova)             | Firefox Platform and Frontend Engineer |
+| <img src="https://avatars.githubusercontent.com/mstange?size=56" width="56" height="56" /> | Markus Stange      | [@mstange](https://github.com/mstange)           | Firefox Platform Engineer              |
+| ![][davehunt]                                                                              | Dave Hunt          | [@davehunt](https://github.com/davehunt)         | Firefox Profiler Team Manager          |
 
 <!-- mstange's image is differently inserted because its size isn't properly controlled by the size parameter, strangely -->
 
 [mstange]: https://avatars.githubusercontent.com/mstange?size=56
-[julienw]: https://avatars.githubusercontent.com/julienw?size=56
+[fatadel]: https://avatars.githubusercontent.com/fatadel?size=56
+[carverdamien]: https://avatars.githubusercontent.com/carverdamien?size=56
 [canova]: https://avatars.githubusercontent.com/canova?size=56
 [davehunt]: https://avatars.githubusercontent.com/davehunt?size=56
-[AdamBrouwersHarries]: https://avatars.githubusercontent.com/AdamBrouwersHarries?size=56
 
 We're friendly and we're on the [Mozilla Matrix instance](https://chat.mozilla.org/) in the [_Firefox Profiler_ channel (_#profiler:mozilla.org_)](https://chat.mozilla.org/#/room/#profiler:mozilla.org). Come chat with us if you have any questions about the project.
 
@@ -37,32 +37,23 @@ To get started clone the repo and get the web application started.
 1.  Run `git clone git@github.com:firefox-devtools/profiler.git`
 2.  Run `cd profiler`
 3.  Run `yarn install`, this will install all of the dependencies.
-4.  Run `yarn start`, this will start up the webpack server.
+4.  Run `yarn start` to serve a production build with live rebuilds and no service worker.
 5.  Point your browser to [http://localhost:4242](http://localhost:4242).
 6.  If port `4242` is taken, then you can run the web app on a different port: `FX_PROFILER_PORT=1234 yarn start`
 
-Other [webpack](https://webpack.js.org/configuration/) and [webpack server](https://webpack.js.org/configuration/dev-server/) options can be set in a `webpack.local-config.js` file at the repo root. For example, if you want to disable caching and the server to automatically open the home page, put in there the following code:
+Use `yarn start-dev` for an unminified development build with React diagnostics on port `4241`. Use `yarn start-prod` to build and serve the deployable version, including its service worker, on port `4243`.
 
-```js
-module.exports = function (config, serverConfig) {
-  config.cache = false;
-  serverConfig.open = true;
-};
-```
+This project uses [TypeScript](https://www.typescriptlang.org/).
 
-[Flow](https://flow.org/) is used for type checking. VSCode users can install the ["Flow Language Support" extension](https://marketplace.visualstudio.com/items?itemName=flowtype.flow-for-vscode), and disable VSCode's built-in TypeScript extension in the workspace via the [setup instructions here](https://github.com/flow/flow-for-vscode#setup).
+## Using GitHub Codespaces
 
-## Using Gitpod
+Alternatively, you can also develop the Firefox Profiler online in a pre-configured development environment using [GitHub Codespaces](https://github.com/features/codespaces).
 
-Alternatively, you can also develop the Firefox Profiler online in a pre-configured development environment:
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/firefox-devtools/profiler)
-
-Gitpod will automatically install all dependencies; start the webpack server for you; and open the web app in a new browser tab. Please look at our [gitpod documentation](./docs-user/gitpod.md) for more information.
+GitHub Codespaces will automatically install all dependencies, start the development server for you, and forward port 4242 so you can access the web app. Please look at our [GitHub Codespaces documentation](./docs-developer/codespaces.md) for more information.
 
 ## Loading in profiles for development
 
-The web app doesn't include any performance profiles by default, so you'll need to load some in. Make sure the local Webpack web server is running, and then try one of the following:
+The web app doesn't include any performance profiles by default, so you'll need to load some in. Make sure the local development server is running, and then try one of the following:
 
 #### 1. Record a profile:
 
@@ -86,14 +77,14 @@ When working on a new feature and code changes, it's important that things work 
 - Locally when running
   - `yarn test-all` - Test all the things!
   - `yarn test` - Run the tests in [`./src/test/`](./src/test/).
-  - `yarn lint` - Run prettier, stylelint, and eslint to check for correct code formatting.
-  - `yarn flow` - Check the [Flow types](https://flow.org/) for correctness.
+  - `yarn lint` - Run oxfmt, stylelint, and oxlint to check for correct code formatting.
+  - `yarn ts` - Check for TypeScript type correctness.
   - `yarn license-check` - Check the dependencies' licenses.
 - `git push` and `git commit`
   - We have [husky](https://www.npmjs.com/package/husky) installed to run automated checks when committing and pushing.
   - Run git commands with `--no-verify` to skip this step. This is useful for submitting broken PRs for feedback.
 - Continuous integration for pull requests
-  - We use CircleCI to run our tests for every PR that is submitted. This gives reviewers a great way to know if things are still working as expected.
+  - We use GitHub Actions to run our tests for every PR that is submitted. This gives reviewers a great way to know if things are still working as expected.
 
 ### Updating snapshots
 
@@ -107,7 +98,7 @@ If you'd like to use [profiler.firefox.com](https://profiler.firefox.com) via UR
 FX_PROFILER_HOST="0.0.0.0" yarn start
 ```
 
-You'll probably also want to add your non-localhost domains to the `allowedHosts` property in `server.js`.
+When using `FX_PROFILER_HOST="0.0.0.0"`, any hostname is allowed so you can access the profiler from other devices on your network. If you want to expose only a specific hostname instead, set `FX_PROFILER_HOST` to that hostname directly and it will be added to the allowed hosts automatically.
 
 ## Finding something to work on
 

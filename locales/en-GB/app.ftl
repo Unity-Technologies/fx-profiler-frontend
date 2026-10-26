@@ -6,12 +6,6 @@
 ### Localization for the App UI of Profiler
 
 
-# Naming convention for l10n IDs: "ComponentName--string-summary".
-# This allows us to minimize the risk of conflicting IDs throughout the app.
-# Please sort alphabetically by (component name), and
-# keep strings in order of appearance.
-
-
 ## The following feature names must be treated as a brand. They cannot be translated.
 
 -firefox-brand-name = Firefox
@@ -27,9 +21,20 @@ AppHeader--app-header = <header>{ -profiler-brand-name }</header> — <subheader
 AppHeader--github-icon =
     .title = Go to our Git repository (this opens in a new window)
 
+## ThemeToggle
+## They are used at the top right side of the home page to switch between themes.
+
+ThemeToggle--system =
+    .title = Follow system theme preference
+ThemeToggle--light =
+    .title = Use light theme
+ThemeToggle--dark =
+    .title = Use dark theme
+
 ## AppViewRouter
 ## This is used for displaying errors when loading the application.
 
+AppViewRouter--error-from-post-message = Could not import the profile.
 AppViewRouter--error-unpublished = Couldn’t retrieve the profile from { -firefox-brand-name }.
 AppViewRouter--error-from-file = Couldn’t read the file or parse the profile in it.
 AppViewRouter--error-local = Not implemented yet.
@@ -44,8 +49,21 @@ AppViewRouter--error-from-localhost-url-safari =
     to import profiles from the local machine in this browser. Please open 
     this page in { -firefox-brand-name } or Chrome instead.
     .title = Safari cannot import local profiles
+# This error message is displayed when the profile is in a newer format version
+# than this build of the Profiler is able to read.
+AppViewRouter--error-profile-version =
+    This profile uses a format that is not supported by this version of { -profiler-brand-name }.
+    Try refreshing the page to check if there is an update available for { -profiler-brand-name }.
 AppViewRouter--route-not-found--home =
     .specialMessage = The URL you tried to reach was not recognised.
+
+## Backtrace
+## This is used to display a backtrace (call stack) for a marker or sample.
+
+# Variables:
+#   $function (String) - Name of the function that was inlined.
+Backtrace--inlining-badge = (inlined)
+    .title = { $function } was inlined into its caller by the compiler.
 
 ## CallNodeContextMenu
 ## This is used as a context menu for the Call Tree, Flame Graph and Stack Chart
@@ -76,6 +94,21 @@ CallNodeContextMenu--transform-focus-function = Focus on function
     .title = { CallNodeContextMenu--transform-focus-function-title }
 CallNodeContextMenu--transform-focus-function-inverted = Focus on function (inverted)
     .title = { CallNodeContextMenu--transform-focus-function-title }
+
+## The translation for "self" in these strings should match the translation used
+## in CallTree--samples-self and CallTree--bytes-self. Alternatively it can be
+## translated as "self values" or "self time" (though "self time" is less desirable
+## because this menu item is also shown in "bytes" mode).
+
+CallNodeContextMenu--transform-focus-self-title =
+    Focusing on self is similar to focusing on a function, but only keeps samples
+    that contribute to the function’s self time. Samples in callees
+    are dropped and the call tree is re-rooted to the focused function.
+CallNodeContextMenu--transform-focus-self = Focus on self only
+    .title = { CallNodeContextMenu--transform-focus-self-title }
+
+##
+
 CallNodeContextMenu--transform-focus-subtree = Focus on subtree only
     .title =
         Focusing on a subtree will remove any sample that does not include that
@@ -120,6 +153,7 @@ CallNodeContextMenu--searchfox = Look up the function name on Searchfox
 CallNodeContextMenu--copy-function-name = Copy function name
 CallNodeContextMenu--copy-script-url = Copy script URL
 CallNodeContextMenu--copy-stack = Copy stack
+CallNodeContextMenu--show-the-function-in-devtools = Show the function in DevTools
 
 ## CallTree
 ## This is the component for Call Tree panel.
@@ -268,16 +302,17 @@ ErrorBoundary--report-error-to-developers-description =
 # This is used in a call to action button, displayed inside the error box.
 ErrorBoundary--report-error-on-github = Report the error on GitHub
 
-## Footer Links
+## Settings Menu
+## The settings popup opened from the cog icon in the top bar.
 
-FooterLinks--legal = Legal
-FooterLinks--Privacy = Privacy
-FooterLinks--Cookies = Cookies
-FooterLinks--languageSwitcher--select =
+SettingsMenu--button =
+    .title = Settings
+SettingsMenu--docs = Documentation
+SettingsMenu--legal = Legal
+SettingsMenu--privacy = Privacy
+SettingsMenu--cookies = Cookies
+SettingsMenu--language-switcher =
     .title = Change language
-FooterLinks--hide-button =
-    .title = Hide footer links
-    .aria-label = Hide footer links
 
 ## FullTimeline
 ## The timeline component of the full view in the analysis UI at the top of the
@@ -323,9 +358,16 @@ Home--record-instructions =
     To start profiling, click on the profiling button, or use the
     keyboard shortcuts. The icon is blue when a profile is recording.
     Hit <kbd>Capture</kbd> to load the data into profiler.firefox.com.
-Home--instructions-content =
-    Recording performance profiles requires <a>{ -firefox-brand-name }</a>.
+Home--instructions-content2 =
+    Recording performance profiles requires <a>{ -firefox-brand-name } for desktop</a>.
     However, existing profiles can be viewed in any modern browser.
+Home--fenix-instructions-directly =
+    { -firefox-android-brand-name } can be profiled directly on this device. For
+    more information, read <a>Profiling { -firefox-android-brand-name } directly on device</a>.
+Home--fenix-instructions-remotely =
+    You can also profile { -firefox-android-brand-name } remotely from { -firefox-brand-name }
+    for desktop. For more information, please consult this documentation:
+    <a>Profiling { -firefox-android-brand-name } remotely</a>.
 Home--record-instructions-start-stop = Stop and start profiling
 Home--record-instructions-capture-load = Capture and load profile
 Home--profiler-motto = Capture a performance profile. Analyse it. Share it. Make the web faster.
@@ -333,6 +375,7 @@ Home--additional-content-title = Load existing profiles
 Home--additional-content-content = You can <strong>drag and drop</strong> a profile file here to load it, or:
 Home--compare-recordings-info = You can also compare recordings. <a>Open the comparing interface.</a>
 Home--your-recent-uploaded-recordings-title = Your recent uploaded recordings
+Home--dark-mode-title = Dark mode
 # We replace the elements such as <perf> and <simpleperf> with links to the
 # documentation to use these tools.
 Home--load-files-from-other-tools2 =
@@ -342,12 +385,24 @@ Home--load-files-from-other-tools2 =
     any file using the <dhat>dhat format</dhat> or <traceevent>Google’s Trace Event
     Format</traceevent>. <write>Learn how to write your
     own importer</write>.
+Home--install-chrome-extension = Install the Chrome extension
+Home--chrome-extension-instructions =
+    Use the <a>{ -profiler-brand-name } extension for Chrome</a>
+    to capture performance profiles in Chrome and analyse them in the
+    { -profiler-brand-name }. Install the extension from the Chrome Web Store.
+Home--chrome-extension-recording-instructions =
+    Once installed, use the extension’s
+    toolbar icon or the shortcuts to start and stop profiling. You can also
+    export profiles and load them here for detailed analysis.
 
 ## IdleSearchField
 ## The component that is used for all the search inputs in the application.
 
-IdleSearchField--search-input =
-    .placeholder = Enter filter terms
+# `/` here overrides Firefox's Type Ahead Find shortcut, which would
+# otherwise trigger an unhelpful find bar on top of the profiler UI.
+# The shortcut itself is not localizable.
+IdleSearchField--search-input2 =
+    .placeholder = Enter filter terms (/)
 
 ## JsTracerSettings
 ## JSTracer is an experimental feature and it's currently disabled. See Bug 1565788.
@@ -416,6 +471,13 @@ MarkerContextMenu--select-the-sender-thread = Select the sender thread “<stron
 #   $filter (String) - Search string that will be used to filter the markers.
 MarkerFiltersContextMenu--drop-samples-outside-of-markers-matching = Drop samples outside of markers matching “<strong>{ $filter }</strong>”
 
+## MarkerCopyTableContextMenu
+## This is the menu when the copy icon is clicked in Marker Chart and Marker
+## Table panels.
+
+MarkerCopyTableContextMenu--copy-table-as-plain = Copy marker table as plain text
+MarkerCopyTableContextMenu--copy-table-as-markdown = Copy marker table as Markdown
+
 ## MarkerSettings
 ## This is used in all panels related to markers.
 
@@ -424,6 +486,14 @@ MarkerSettings--panel-search =
     .title = Only display markers that match a certain name
 MarkerSettings--marker-filters =
     .title = Marker Filters
+MarkerSettings--copy-table =
+    .title = Copy table as text
+# This string is used when the user tries to copy a marker table with
+# more than 10000 rows.
+# Variable:
+#   $rows (Number) - Number of rows the marker table has
+#   $maxRows (Number) - Number of maximum rows that can be copied
+MarkerSettings--copy-table-exceeed-max-rows = The number of rows exceeds the limit: { $rows } > { $maxRows }. Only the first { $maxRows } rows will be copied.
 
 ## MarkerSidebar
 ## This is the sidebar component that is used in Marker Table panel.
@@ -438,6 +508,16 @@ MarkerTable--duration = Duration
 MarkerTable--name = Name
 MarkerTable--details = Details
 
+## MarkerTooltip
+## This is the component for Marker Tooltip panel.
+
+# This is used as the tooltip for the filter button in marker tooltips.
+# Variables:
+#   $filter (String) - Search string that will be used to filter the markers.
+MarkerTooltip--filter-button-tooltip =
+    .aria-label = Only show markers matching: “{ $filter }”
+    .title = Only show markers matching: “{ $filter }”
+
 ## MenuButtons
 ## These strings are used for the buttons at the top of the profile viewer.
 
@@ -445,14 +525,15 @@ MenuButtons--index--metaInfo-button =
     .label = Profile Info
 MenuButtons--index--full-view = Full View
 MenuButtons--index--cancel-upload = Cancel Upload
-MenuButtons--index--share-upload =
-    .label = Upload Local Profile
-MenuButtons--index--share-re-upload =
-    .label = Re-upload
+MenuButtons--index--save =
+    .label = Save…
+MenuButtons--index--share =
+    .label = Share…
+MenuButtons--index--reshare =
+    .label = Re-share…
 MenuButtons--index--share-error-uploading =
     .label = Error uploading
 MenuButtons--index--revert = Revert to Original Profile
-MenuButtons--index--docs = Docs
 MenuButtons--permalink--button =
     .label = Permalink
 
@@ -470,6 +551,28 @@ MenuButtons--metaInfo--resymbolicate-profile = Re-symbolicate profile
 MenuButtons--metaInfo--symbolicate-profile = Symbolicate profile
 MenuButtons--metaInfo--attempting-resymbolicate = Attempting to re-symbolicate profile
 MenuButtons--metaInfo--currently-symbolicating = Currently symbolicating profile
+MenuButtons--metaInfo--source-maps = Source maps:
+# The trailing ellipsis indicates that clicking the button opens a file picker.
+MenuButtons--metaInfo--apply-source-map = Apply source map…
+    .title = Load a .map file from disk to symbolicate a minified JavaScript bundle, to recover original function names and source locations.
+# Shown when the uploaded map could match more than one source and the user has
+# to choose which one it applies to.
+MenuButtons--metaInfo--source-map-choose-bundle = Choose which bundle this source map applies to:
+# Button to confirm the chosen source and apply the source map to it.
+MenuButtons--metaInfo--source-map-apply = Apply
+# Button to dismiss the source chooser without symbolicating.
+MenuButtons--metaInfo--source-map-cancel = Cancel
+# Shown after symbolication finished and original sources were resolved.
+# Variable:
+#   $filename (String) - The bundle source the source map was applied to.
+MenuButtons--metaInfo--source-map-success = Original sources resolved for { $filename }.
+# Shown after symbolication finished but no stack positions matched the map.
+# Variable:
+#   $filename (String) - The bundle source the source map was applied to.
+MenuButtons--metaInfo--source-map-no-match = No stack positions in { $filename } matched this source map.
+MenuButtons--metaInfo--source-map-error-invalid = The selected file is not a valid source map.
+MenuButtons--metaInfo--source-map-error-no-eligible = This profile has no JS bundles with source map URLs.
+MenuButtons--metaInfo--source-map-error-failed = Could not apply this source map to the profile.
 MenuButtons--metaInfo--cpu-model = CPU model:
 MenuButtons--metaInfo--cpu-cores = CPU cores:
 MenuButtons--metaInfo--main-memory = Main memory:
@@ -481,11 +584,16 @@ MenuButtons--index--hide-moreInfo-button = Show less
 #   $physicalCPUs (Number), $logicalCPUs (Number) - Number of Physical and Logical CPU Cores
 MenuButtons--metaInfo--physical-and-logical-cpu =
     { $physicalCPUs ->
-        [one] { $physicalCPUs } physical core
-       *[other] { $physicalCPUs } physical cores
-    }, { $logicalCPUs ->
-        [one] { $logicalCPUs } logical core
-       *[other] { $logicalCPUs } logical cores
+        [one]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } physical core, { $logicalCPUs } logical core
+               *[other] { $physicalCPUs } physical core, { $logicalCPUs } logical cores
+            }
+       *[other]
+            { $logicalCPUs ->
+                [one] { $physicalCPUs } physical cores, { $logicalCPUs } logical core
+               *[other] { $physicalCPUs } physical cores, { $logicalCPUs } logical cores
+            }
     }
 # This string is used when we only have the information about the number of
 # physical CPU cores.
@@ -509,6 +617,8 @@ MenuButtons--metaInfo--profiling-started = Recording started:
 MenuButtons--metaInfo--profiling-session = Recording length:
 MenuButtons--metaInfo--main-process-started = Main process started:
 MenuButtons--metaInfo--main-process-ended = Main process ended:
+MenuButtons--metaInfo--file-name = File name:
+MenuButtons--metaInfo--file-size = File size:
 MenuButtons--metaInfo--interval = Interval:
 MenuButtons--metaInfo--buffer-capacity = Buffer Capacity:
 MenuButtons--metaInfo--buffer-duration = Buffer Duration:
@@ -524,7 +634,8 @@ MenuButtons--metaInfo--buffer-duration-seconds =
 MenuButtons--metaInfo--buffer-duration-unlimited = Unlimited
 MenuButtons--metaInfo--application = Application
 MenuButtons--metaInfo--name-and-version = Name and version:
-MenuButtons--metaInfo--application-uptime = Uptime:
+# The time between application startup and when the profiler was started
+MenuButtons--metaInfo--application-uptime2 = Uptime:
 MenuButtons--metaInfo--update-channel = Update Channel:
 MenuButtons--metaInfo--build-id = Build ID:
 MenuButtons--metaInfo--build-type = Build Type:
@@ -587,9 +698,15 @@ MenuButtons--publish--renderCheckbox-label-preference = Include preference value
 MenuButtons--publish--renderCheckbox-label-private-browsing = Include the data from private browsing windows
 MenuButtons--publish--renderCheckbox-label-private-browsing-warning-image =
     .title = This profile contains private browsing data
-MenuButtons--publish--reupload-performance-profile = Re-upload Performance Profile
+MenuButtons--publish--renderCheckbox-label-argument-values = Include JavaScript execution tracing function argument values
+MenuButtons--publish--renderCheckbox-label-argument-values-warning-image =
+    .title = This profile contains function argument values recorded from the page, which may include personal data
 MenuButtons--publish--share-performance-profile = Share Performance Profile
+MenuButtons--publish--reshare-performance-profile = Re-share Performance Profile
+MenuButtons--publish--save-performance-profile = Save Performance Profile
+MenuButtons--publish--local-profile-description = This profile hasn’t been uploaded and will be lost when you close this tab. To keep it, either save it to your computer or upload it using Share.
 MenuButtons--publish--info-description = Upload your profile and make it accessible to anyone with the link.
+MenuButtons--publish--download-info-description = Save this profile as a file on your computer.
 MenuButtons--publish--info-description-default = By default, your personal data is removed.
 MenuButtons--publish--info-description-firefox-nightly2 = This profile is from { -firefox-nightly-brand-name }, so by default most information is included.
 MenuButtons--publish--include-additional-data = Include additional data that may be identifiable
@@ -598,7 +715,7 @@ MenuButtons--publish--upload-title = Uploading profile…
 MenuButtons--publish--cancel-upload = Cancel Upload
 MenuButtons--publish--message-something-went-wrong = Uh oh, something went wrong when uploading the profile.
 MenuButtons--publish--message-try-again = Try again
-MenuButtons--publish--download = Download
+MenuButtons--publish--save = Save
 MenuButtons--publish--compressing = Compressing…
 MenuButtons--publish--error-while-compressing = Error while compressing, try unticking some tickboxes to reduce the profile size.
 
@@ -627,6 +744,14 @@ NumberFormat--short-date = { SHORTDATE($date) }
 ## The component that is used for all the search input hints in the application.
 
 PanelSearch--search-field-hint = Did you know you can use the comma (,) to search using several terms?
+
+## Profile Name Button
+
+ProfileName--edit-profile-name-button =
+    .title = Edit the profile name
+ProfileName--edit-profile-name-input =
+    .aria-label = Profile name
+    .title = Edit the profile name
 
 ## Profile Delete Button
 
@@ -675,6 +800,7 @@ ProfileFilterNavigator--full-range-with-duration = Full Range ({ $fullRangeDurat
 
 ## Profile Loader Animation
 
+ProfileLoaderAnimation--loading-from-post-message = Importing and processing the profile…
 ProfileLoaderAnimation--loading-unpublished = Importing the profile directly from { -firefox-brand-name }…
 ProfileLoaderAnimation--loading-from-file = Reading the file and processing the profile…
 ProfileLoaderAnimation--loading-local = Not implemented yet.
@@ -705,8 +831,8 @@ ServiceWorkerManager--updated-while-not-ready =
     was fully loaded. You might see malfunctions.
 ServiceWorkerManager--new-version-is-ready = A new version of the application has been downloaded and is ready to use.
 ServiceWorkerManager--hide-notice-button =
-    .title = Hide the reload notice
     .aria-label = Hide the reload notice
+    .title = Hide the reload notice
 
 ## StackSettings
 ## This is the settings component that is used in Call Tree, Flame Graph and Stack
@@ -714,8 +840,8 @@ ServiceWorkerManager--hide-notice-button =
 
 StackSettings--implementation-all-frames = All frames
     .title = Do not filter the stack frames
-StackSettings--implementation-javascript2 = JavaScript
-    .title = Show only the stack frames related to JavaScript execution
+StackSettings--implementation-script = Script
+    .title = Show only the stack frames related to script execution
 StackSettings--implementation-native2 = Native
     .title = Show only the stack frames for native code
 # This label is displayed in the marker chart and marker table panels only.
@@ -735,7 +861,10 @@ StackSettings--call-tree-strategy-native-deallocations-sites = Deallocation Site
     .title = Summarise using bytes of memory deallocated, by the site where the memory was deallocated
 StackSettings--invert-call-stack = Invert call stack
     .title = Sort by the time spent in a call node, ignoring its children.
+StackSettings--include-idle-samples = Include idle samples
+    .title = Untick to hide samples whose leaf frame is in the Idle category.
 StackSettings--show-user-timing = Show user timing
+StackSettings--use-stack-chart-same-widths = Use the same width for each stack
 StackSettings--panel-search =
     .label = Filter stacks:
     .title = Only display stacks which contain a function whose name matches this substring
@@ -800,9 +929,26 @@ TrackNameButton--hide-process =
 ## the UI. To learn more about it, visit:
 ## https://profiler.firefox.com/docs/#/./memory-allocations?id=memory-track
 
-TrackMemoryGraph--relative-memory-at-this-time = relative memory at this time
-TrackMemoryGraph--memory-range-in-graph = memory range in graph
-TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample = allocations and deallocations since the previous sample
+# Variables:
+#   $value (String) - the relative memory at this time (e.g. "5MB")
+TrackMemoryGraph--relative-memory-at-this-time2 = { $value }
+    .label = relative memory at this time
+# Variables:
+#   $value (String) - the memory range across the graph (e.g. "5MB")
+TrackMemoryGraph--memory-range-in-graph2 = { $value }
+    .label = memory range in graph
+# Variables:
+#   $value (String) - count of allocations and deallocations since the previous sample
+TrackMemoryGraph--allocations-and-deallocations-since-the-previous-sample2 = { $value }
+    .label = allocations and deallocations since the previous sample
+
+## TrackProcessCPUGraph
+## This is used to show the CPU usage of a process over time in the timeline.
+
+# Variables:
+#   $value (String) - the CPU usage at this sample (e.g. "50%")
+TrackProcessCPUGraph--cpu = { $value }
+    .label = CPU
 
 ## TrackPower
 ## This is used to show the power used by the CPU and other chips in a computer,
@@ -829,6 +975,11 @@ TrackPower--tooltip-power-watt = { $value } W
 #   $value (String) - the power value at this location
 TrackPower--tooltip-power-milliwatt = { $value } mW
     .label = Power
+# This is used in the tooltip when the instant power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-power-microwatt = { $value } μW
+    .label = Power
 # This is used in the tooltip when the power value uses the kilowatt unit.
 # Variables:
 #   $value (String) - the power value at this location
@@ -843,6 +994,11 @@ TrackPower--tooltip-average-power-watt = { $value } W
 # Variables:
 #   $value (String) - the power value at this location
 TrackPower--tooltip-average-power-milliwatt = { $value } mW
+    .label = Average power in the current selection
+# This is used in the tooltip when the power value uses the microwatt unit.
+# Variables:
+#   $value (String) - the power value at this location
+TrackPower--tooltip-average-power-microwatt = { $value } μW
     .label = Average power in the current selection
 # This is used in the tooltip when the energy used in the current range uses the
 # kilowatt-hour unit.
@@ -978,6 +1134,12 @@ TransformNavigator--focus-subtree = Focus Node: { $item }
 # Variables:
 #   $item (String) - Name of the function that transform applied to.
 TransformNavigator--focus-function = Focus: { $item }
+# "Focus self" transform.
+# See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-on-function-self
+# Also see the translation note above CallNodeContextMenu--transform-focus-self.
+# Variables:
+#   $item (String) - Name of the function that transform applied to.
+TransformNavigator--focus-self = Focus Self: { $item }
 # "Focus category" transform. The word "Focus" has the meaning of an adjective here.
 # See: https://profiler.firefox.com/docs/#/./guide-filtering-call-trees?id=focus-category
 # Variables:
@@ -1049,6 +1211,12 @@ BottomBox--assembly-code-not-available-title = Assembly code not available
 # Elements:
 #   <a>link text</a> - A link to the github issue about supported scenarios.
 BottomBox--assembly-code-not-available-text = See <a>issue #4520</a> for supported scenarios and planned improvements.
+# The toggle button for making the bottom box fullscreen.
+BottomBox--hide-fullscreen =
+    .title = Exit fullscreen
+# The toggle button for making the bottom box fullscreen.
+BottomBox--show-fullscreen =
+    .title = Fullscreen
 SourceView--close-button =
     .title = Close the source view
 
@@ -1105,6 +1273,13 @@ SourceView--not-in-archive-error-when-obtaining-source = The file { $pathInArchi
 #   $url (String) - The URL from which the "archive" file was downloaded.
 #   $parsingErrorMessage (String) - The raw internal error message during parsing, not localized
 SourceView--archive-parsing-error-when-obtaining-source = The archive at { $url } could not be parsed: { $parsingErrorMessage }
+# Displayed below SourceView--cannot-obtain-source, if a JS file could not be found in
+# the browser.
+# Variables:
+#   $url (String) - The URL of the JS source file.
+#   $sourceUuid (number) - The UUID of the JS source file.
+#   $errorMessage (String) - The raw internal error message, not localized
+SourceView--not-in-browser-error-when-obtaining-js-source = The browser was unable to obtain the source file for { $url } with sourceUuid { $sourceUuid }: { $errorMessage }.
 
 ## Toggle buttons in the top right corner of the bottom box
 
@@ -1116,6 +1291,17 @@ AssemblyView--show-button =
 # Assembly refers to the low-level programming language.
 AssemblyView--hide-button =
     .title = Hide the assembly view
+# The "◀" button above the assembly view.
+AssemblyView--prev-button =
+    .title = Previous
+# The "▶" button above the assembly view.
+AssemblyView--next-button =
+    .title = Next
+# The label showing the current position and total count above the assembly view.
+# Variables:
+#   $current (Number) - The current position (1-indexed).
+#   $total (Number) - The total count.
+AssemblyView--position-label = { $current } of { $total }
 
 ## UploadedRecordingsHome
 ## This is the page that displays all the profiles that user has uploaded.
